@@ -1,15 +1,14 @@
 
-#include "application.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
+
 #include <cstdlib>
-#include <exception>
-#include <iostream>
+
+#include "application.hpp"
 
 int main(const int /*argc*/, const char ** /*argv[]*/) {
   spdlog::info("Start");
 
-  Application app;
+  vre::Application app;
 
   try {
     app.Run();

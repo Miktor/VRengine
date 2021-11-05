@@ -1,16 +1,11 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <iosfwd>
-#include <optional>
-#include <vector>
+#include "common.hpp"
 
-#define GLFW_INCLUDE_VULKAN
-#include <glm/glm.hpp>
-#include <GLFW/glfw3.h>
-#include <vulkan/vk_platform.h>
-#include <vulkan/vulkan_core.h>
+#include "rendering/buffers.hpp"
+#include "scene/scene.hpp"
+
+namespace vre {
 
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family_;
@@ -26,7 +21,7 @@ struct SwapChainSupportDetails {
 };
 
 struct Vertex {
-  glm::vec2 pos_;
+  glm::vec3 pos_;
 
   static VkVertexInputBindingDescription GetBindingDescription();
   static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
@@ -37,6 +32,9 @@ class Application {
   void Run();
 
   virtual bool ProcessInput(GLFWindow *window, int key, int scancode, int action, int mods);
+
+  std::shared_ptr<rendering::IndexBuffer> CreateIndexBuffer(const std::vector<uint32_t> &indices);
+  std::shared_ptr<rendering::VertexBuffer> CreateVertexBuffer(const std::vector<glm::vec3> &vertexes);
 
  protected:
   GLFWindow *window_ = nullptr;
@@ -72,18 +70,13 @@ class Application {
   std::vector<VkFence> images_in_flight_;
   size_t current_frame_ = 0;
 
+  scene::Scene main_scene_;
+
   virtual void PreInit() {}
   virtual void Cleanup();
   virtual void DrawRenderPass(VkCommandBuffer command_buffers) {}
   virtual void PreDrawFrame(uint32_t image_index) {}
   virtual void CrateBuffers() {}
-
-  void CreateIndexBuffer(VkBuffer &index_buffer, VkDeviceMemory &index_buffer_memory, const std::vector<uint16_t> &indices);
-  void CreateVertexBuffer(VkBuffer &vertex_buffer, VkDeviceMemory &vertex_buffer_memory, const std::vector<Vertex> &vertexes);
-
-  void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer,
-                    VkDeviceMemory &buffer_memory);
-  void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size);
 
   void CreateCommandBuffers();
 
@@ -128,3 +121,5 @@ class Application {
                                                       VkDebugUtilsMessageTypeFlagsEXT message_type,
                                                       const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data);
 };
+
+}  // namespace vre

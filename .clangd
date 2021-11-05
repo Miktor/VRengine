@@ -26,7 +26,6 @@ Diagnostics:
       hicpp-no-array-decay,
       google-readability-braces-around-statements,
       google-readability-namespace-comments,
-      google-runtime-references,
       misc-non-private-member-variables-in-classes,
       modernize-return-braced-init-list,
       modernize-use-trailing-return-type,

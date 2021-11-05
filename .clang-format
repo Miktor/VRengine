@@ -4,5 +4,6 @@ ColumnLimit: 140
 DerivePointerAlignment: false
 PointerAlignment: Right
 
+IncludeBlocks: Preserve
 
 CommentPragmas: "(@copydoc)"

@@ -25,6 +25,7 @@ ENDIF()
 set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
 set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
 set(TINYGLTF_USE_CPP14 ON CACHE INTERNAL "" FORCE)
+set(TINYGLTF_BUILD_LOADER_EXAMPLE OFF CACHE INTERNAL "" FORCE)
 add_subdirectory(external/tinygltf)
 
 
@@ -66,8 +67,6 @@ target_link_libraries(vrengine PRIVATE spdlog::spdlog)
 
 add_subdirectory(assets)
 add_dependencies(vrengine shaders_build)
-
-target_precompile_headers(vrengine PRIVATE src/gle_pch.hpp)
 
 file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.h)
 

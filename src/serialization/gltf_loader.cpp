@@ -71,7 +71,7 @@ void LoadMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, const st
           break;
         }
         default:
-          std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+          SPDLOG_ERROR("Index component type {} not supported!", accessor.componentType);
           return;
       }
     }
@@ -153,4 +153,4 @@ std::vector<std::shared_ptr<scene::Node>> GLTFLoader::LoadFromFile(const std::st
   return root_nodes;
 }
 
-}  // namespace vre
+}  // namespace vre::serialization

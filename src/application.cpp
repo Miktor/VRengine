@@ -1,8 +1,12 @@
 #include "application.hpp"
 
+#include <fstream>
+
 #include <vulkan/vulkan_core.h>
 
 namespace vre {
+
+namespace {
 
 constexpr uint32_t kWidth = 800;
 constexpr uint32_t kHeight = 600;
@@ -18,6 +22,22 @@ constexpr bool kEnableValidationLayers = false;
 #else
 constexpr bool kEnableValidationLayers = true;
 #endif
+
+spdlog::level::level_enum GetSpdLogLevel(VkDebugUtilsMessageSeverityFlagBitsEXT severity) {
+  switch (severity) {
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+      return spdlog::level::trace;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+      return spdlog::level::info;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+      return spdlog::level::warn;
+    default:
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+      return spdlog::level::err;
+  }
+};
+
+}  // namespace
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *p_create_info,
                                       const VkAllocationCallbacks *p_allocator, VkDebugUtilsMessengerEXT *p_debug_messenger) {
@@ -893,11 +913,11 @@ std::vector<char> Application::ReadFile(const std::string &filename) {
   return buffer;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL Application::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/,
+VKAPI_ATTR VkBool32 VKAPI_CALL Application::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                                           VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
                                                           const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                                                           void * /*pUserData*/) {
-  std::cerr << "validation layer: " << p_callback_data->pMessage << std::endl;
+  SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(), GetSpdLogLevel(messageSeverity), "validation layer: {}", p_callback_data->pMessage);
 
   return VK_FALSE;
 }

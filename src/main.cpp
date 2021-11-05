@@ -13,7 +13,7 @@ int main(const int /*argc*/, const char ** /*argv[]*/) {
   try {
     app.Run();
   } catch (const std::exception &e) {
-    std::cerr << e.what() << std::endl;
+    SPDLOG_ERROR(e.what());
     return EXIT_FAILURE;
   }
 

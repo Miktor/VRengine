@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7 FATAL_ERROR)
-project(vulkan_fem VERSION 0.1.0)
+project(vrengine VERSION 0.1.0)
 
 enable_language(CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -24,6 +24,7 @@ ENDIF()
 
 set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
 set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
+set(TINYGLTF_USE_CPP14 ON CACHE INTERNAL "" FORCE)
 add_subdirectory(external/tinygltf)
 
 
@@ -34,34 +35,39 @@ find_package(spdlog REQUIRED)
 
 include_directories(${GLM_INCLUDE_DIR})
 
-file(GLOB VULKAN_FEM_SRC
-     "*.h"
-     "*.cpp"
+file(GLOB_RECURSE SOURCES
+     "src/*.h"
+     "src/*.cpp"
 )
 
-AUX_SOURCE_DIRECTORY(src VULKAN_FEM_SRC)
-add_executable(vulkan_fem ${VULKAN_FEM_SRC})
+AUX_SOURCE_DIRECTORY(src SOURCES)
+add_executable(vrengine ${SOURCES})
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    target_compile_definitions(vulkan_fem PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+    target_compile_definitions(vrengine PRIVATE VK_USE_PLATFORM_WIN32_KHR)
     set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
 ELSE()
-    target_compile_definitions(vulkan_fem PRIVATE VK_USE_PLATFORM_MACOS_MVK)
+    target_compile_definitions(vrengine PRIVATE VK_USE_PLATFORM_MACOS_MVK)
     set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
 ENDIF()
 
-target_include_directories(vulkan_fem PRIVATE Vulkan::Vulkan)
+target_include_directories(vrengine PRIVATE
+    src
+    Vulkan::Vulkan
+    external)
 
-target_link_libraries(vulkan_fem PRIVATE Vulkan::Vulkan)
-target_link_libraries(vulkan_fem PRIVATE glfw)
-target_link_libraries(vulkan_fem PRIVATE spdlog::spdlog)
+target_link_libraries(vrengine PRIVATE Vulkan::Vulkan)
+target_link_libraries(vrengine PRIVATE glfw)
+target_link_libraries(vrengine PRIVATE spdlog::spdlog)
 
 add_subdirectory(assets)
-add_dependencies(vulkan_fem shaders_build)
+add_dependencies(vrengine shaders_build)
+
+target_precompile_headers(vrengine PRIVATE src/gle_pch.hpp)
 
 file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.h)
 

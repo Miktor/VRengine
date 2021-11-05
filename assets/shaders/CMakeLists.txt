@@ -22,3 +22,5 @@ add_custom_target(
     shaders_build
     DEPENDS ${SPIRV_BINARY_FILES}
     )
+
+file(COPY ${SPIRV_BINARY_FILES} DESTINATION ${PROJECT_SOURCE_DIR})

@@ -34,11 +34,7 @@ class Application {
 
   scene::Scene main_scene_;
 
-  virtual void PreInit() {}
   virtual void Cleanup();
-  virtual void DrawRenderPass(VkCommandBuffer command_buffers) {}
-  virtual void PreDrawFrame(uint32_t image_index) {}
-  virtual void CrateBuffers() {}
 
  private:
   void InitWindow();

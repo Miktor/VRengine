@@ -36,6 +36,7 @@ Checks: >
   -readability-named-parameter,
   -readability-redundant-declaration,
   -readability-function-cognitive-complexity,
+  -readability-qualified-auto,
   -bugprone-narrowing-conversions
   
 # Turn all the warnings from the checks above into errors.

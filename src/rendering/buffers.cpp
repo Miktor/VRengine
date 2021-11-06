@@ -1,8 +1,8 @@
 #include "rendering/buffers.hpp"
 
-#include "application.hpp"
+#include "rendering/render_core.hpp"
 
-namespace vre {
+namespace vre::rendering {
 
 namespace {
 
@@ -94,8 +94,8 @@ std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceS
 
   VkBuffer buffer;
   VkDeviceMemory buffer_memory;
-  CreateBuffer(buffer, buffer_memory, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | T::kBufferBit,
-               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, device, physical_device);
+  CreateBuffer(buffer, buffer_memory, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | T::kBufferBit, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+               device, physical_device);
 
   CopyBuffer(staging_buffer, buffer, buffer_size, device, command_pool, queue);
 
@@ -107,16 +107,37 @@ std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceS
 
 }  // namespace
 
-std::shared_ptr<rendering::VertexBuffer> Application::CreateVertexBuffer(const std::vector<glm::vec3> &vertexes) {
+std::shared_ptr<rendering::VertexBuffer> RenderCore::CreateVertexBuffer(const std::vector<glm::vec3> &vertexes) {
   return CrateBufferThroughtStaging<rendering::VertexBuffer>(reinterpret_cast<const void *>(vertexes.data()),
                                                              vertexes.size() * sizeof(vertexes.front()), device_, physical_device_,
                                                              command_pool_, graphics_queue_);
 }
 
-std::shared_ptr<rendering::IndexBuffer> Application::CreateIndexBuffer(const std::vector<uint32_t> &indices) {
+std::shared_ptr<rendering::IndexBuffer> RenderCore::CreateIndexBuffer(const std::vector<uint32_t> &indices) {
   return CrateBufferThroughtStaging<rendering::IndexBuffer>(reinterpret_cast<const void *>(indices.data()),
                                                             sizeof(indices[0]) * indices.size(), device_, physical_device_, command_pool_,
                                                             graphics_queue_);
 }
 
-}  // namespace vre
+VkVertexInputBindingDescription Vertex::GetBindingDescription() {
+  VkVertexInputBindingDescription binding_description{};
+
+  binding_description.binding = 0;
+  binding_description.stride = sizeof(Vertex);
+  binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+  return binding_description;
+}
+
+std::vector<VkVertexInputAttributeDescription> Vertex::GetAttributeDescriptions() {
+  std::vector<VkVertexInputAttributeDescription> attribute_descriptions(1);
+
+  attribute_descriptions[0].binding = 0;
+  attribute_descriptions[0].location = 0;
+  attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+  attribute_descriptions[0].offset = offsetof(Vertex, pos_);
+
+  return attribute_descriptions;
+}
+
+}  // namespace vre::rendering

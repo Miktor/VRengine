@@ -15,6 +15,7 @@ Checks: >
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-init-variables,
   -hicpp-signed-bitwise,                                        # VK_MAKE_VERSION
   -hicpp-avoid-c-arrays,
   -cppcoreguidelines-avoid-c-arrays,

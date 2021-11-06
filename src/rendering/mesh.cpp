@@ -1,6 +1,7 @@
 #include "mesh.hpp"
 
 #include "application.hpp"
+#include "rendering/render_core.hpp"
 
 namespace vre::rendering {
 
@@ -23,13 +24,13 @@ void Mesh::AddPrimitive(std::vector<glm::vec3> vert, const std::vector<uint32_t>
   primitives_.push_back(primitive);
 }
 
-void Mesh::InitializeVulkan(Application &app) {
+void Mesh::InitializeVulkan(RenderCore &renderer) {
   if (!pos_.empty()) {
-    vertex_buffer_ = app.CreateVertexBuffer(pos_);
+    vertex_buffer_ = renderer.CreateVertexBuffer(pos_);
   }
 
   if (!indicies_.empty()) {
-    index_buffer_ = app.CreateIndexBuffer(indicies_);
+    index_buffer_ = renderer.CreateIndexBuffer(indicies_);
   }
 }
 

@@ -31,5 +31,12 @@ class VertexBuffer : public Buffer {
   static constexpr VkBufferUsageFlagBits kBufferBit = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 };
 
+struct Vertex {
+  glm::vec3 pos_;
+
+  static VkVertexInputBindingDescription GetBindingDescription();
+  static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
+};
+
 }  // namespace rendering
 }  // namespace vre

@@ -4,7 +4,9 @@
 
 namespace vre {
 
-class Application;
+namespace rendering {
+class RenderCore;
+}
 
 namespace scene {
 
@@ -14,7 +16,7 @@ class Scene {
  public:
   void LoadFromFile();
   void Initialize();
-  void InitializeVulkan(Application &app);
+  void InitializeVulkan(rendering::RenderCore &renderer);
 
   void Update();
   void Render(VkCommandBuffer command_buffers);

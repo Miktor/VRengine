@@ -2,6 +2,7 @@
 
 #include "node.hpp"
 #include "rendering/mesh.hpp"
+#include "rendering/render_core.hpp"
 #include "serialization/gltf_loader.hpp"
 
 namespace vre::scene {
@@ -10,16 +11,16 @@ void Scene::LoadFromFile() { root_nodes_ = serialization::GLTFLoader::LoadFromFi
 
 void Scene::Initialize() {}
 
-void Scene::InitializeVulkan(Application &app) {
+void Scene::InitializeVulkan(rendering::RenderCore &renderer) {
   for (auto &node : root_nodes_) {
     for (auto &child : node->childrens_) {
       if (child->mesh_) {
-        child->mesh_->InitializeVulkan(app);
+        child->mesh_->InitializeVulkan(renderer);
       }
     }
 
     if (node->mesh_) {
-      node->mesh_->InitializeVulkan(app);
+      node->mesh_->InitializeVulkan(renderer);
     }
   }
 }

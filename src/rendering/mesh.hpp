@@ -4,11 +4,9 @@
 
 #include "rendering/buffers.hpp"
 
-namespace vre {
+namespace vre ::rendering {
 
-class Application;
-
-namespace rendering {
+class RenderCore;
 
 struct Primitive {
   uint32_t index_start_ = 0;
@@ -22,7 +20,7 @@ class Mesh {
  public:
   void AddPrimitive(std::vector<glm::vec3> vert, const std::vector<uint32_t> &indicies);
 
-  void InitializeVulkan(Application &app);
+  void InitializeVulkan(RenderCore &renderer);
   void Render(VkCommandBuffer command_buffers);
 
  private:
@@ -34,5 +32,5 @@ class Mesh {
   std::shared_ptr<IndexBuffer> index_buffer_;
   std::shared_ptr<VertexBuffer> vertex_buffer_;
 };
-}  // namespace rendering
-}  // namespace vre
+
+}  // namespace vre::rendering

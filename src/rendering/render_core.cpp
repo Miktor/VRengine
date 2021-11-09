@@ -1,6 +1,7 @@
 #include "render_core.hpp"
 
 #include <cstddef>
+#include <tuple>
 
 #include <vulkan/vulkan_core.h>
 
@@ -365,8 +366,8 @@ VkShaderModule CreateShaderModule(VkDevice device, const std::vector<char> &code
   return shader_module;
 }
 
-VkPipeline CreateGraphicsPipeline(VkDevice device, const VkExtent2D &swap_chain_extent, VkPipelineLayout pipeline_layout,
-                                  VkRenderPass render_pass, VkPolygonMode mode) {
+auto CreateGraphicsPipeline(VkDevice device, const VkExtent2D &swap_chain_extent, VkRenderPass render_pass,
+                            VkDescriptorSetLayout descriptor_set_layout, VkPolygonMode mode) {
   auto vert_shader_code = platform::Platform::ReadFile("assets/shaders/shader.vert.spv");
   auto frag_shader_code = platform::Platform::ReadFile("assets/shaders/shader.frag.spv");
 
@@ -455,9 +456,10 @@ VkPipeline CreateGraphicsPipeline(VkDevice device, const VkExtent2D &swap_chain_
 
   VkPipelineLayoutCreateInfo pipeline_layout_info{};
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = 0;
-  pipeline_layout_info.pushConstantRangeCount = 0;
+  pipeline_layout_info.setLayoutCount = 1;
+  pipeline_layout_info.pSetLayouts = &descriptor_set_layout;
 
+  VkPipelineLayout pipeline_layout;
   if (vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
   }
@@ -485,7 +487,7 @@ VkPipeline CreateGraphicsPipeline(VkDevice device, const VkExtent2D &swap_chain_
   vkDestroyShaderModule(device, frag_shader_module, nullptr);
   vkDestroyShaderModule(device, vert_shader_module, nullptr);
 
-  return graphics_pipeline;
+  return std::make_tuple(pipeline_layout, graphics_pipeline);
 }
 
 VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &available_formats) {
@@ -581,6 +583,82 @@ VkCommandBuffer StartCommandBuffer(VkCommandBuffer command_buffer, VkFramebuffer
   return command_buffer;
 }
 
+VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice device) {
+  VkDescriptorSetLayoutBinding ubo_layout_binding{};
+  ubo_layout_binding.binding = 0;
+  ubo_layout_binding.descriptorCount = 1;
+  ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  ubo_layout_binding.pImmutableSamplers = nullptr;
+  ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+  VkDescriptorSetLayoutCreateInfo layout_info{};
+  layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layout_info.bindingCount = 1;
+  layout_info.pBindings = &ubo_layout_binding;
+
+  VkDescriptorSetLayout descriptor_set_layout;
+  if (vkCreateDescriptorSetLayout(device, &layout_info, nullptr, &descriptor_set_layout) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create descriptor set layout!");
+  }
+
+  return descriptor_set_layout;
+}
+
+VkDescriptorPool CreateDescriptorPool(const size_t count, VkDevice device) {
+  VkDescriptorPoolSize pool_size{};
+  pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  pool_size.descriptorCount = static_cast<uint32_t>(count);
+
+  VkDescriptorPoolCreateInfo pool_info{};
+  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  pool_info.poolSizeCount = 1;
+  pool_info.pPoolSizes = &pool_size;
+  pool_info.maxSets = static_cast<uint32_t>(count);
+
+  VkDescriptorPool descriptor_pool;
+  if (vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptor_pool) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create descriptor pool!");
+  }
+
+  return descriptor_pool;
+}
+
+std::vector<VkDescriptorSet> CreateDescriptorSets(const uint32_t count, VkDevice device, VkDescriptorPool descriptor_pool,
+                                                  VkDescriptorSetLayout descriptor_set_layout,
+                                                  const std::vector<std::shared_ptr<UniformBuffer>> &uniform_buffers) {
+  std::vector<VkDescriptorSetLayout> layouts(count, descriptor_set_layout);
+  VkDescriptorSetAllocateInfo alloc_info{};
+  alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  alloc_info.descriptorPool = descriptor_pool;
+  alloc_info.descriptorSetCount = count;
+  alloc_info.pSetLayouts = layouts.data();
+
+  std::vector<VkDescriptorSet> descriptor_sets(count);
+  if (vkAllocateDescriptorSets(device, &alloc_info, descriptor_sets.data()) != VK_SUCCESS) {
+    throw std::runtime_error("failed to allocate descriptor sets!");
+  }
+
+  for (size_t i = 0; i < count; i++) {
+    VkDescriptorBufferInfo buffer_info{};
+    buffer_info.buffer = uniform_buffers[i]->buffer;
+    buffer_info.offset = 0;
+    buffer_info.range = sizeof(UniformBufferObject);
+
+    VkWriteDescriptorSet descriptor_write{};
+    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write.dstSet = descriptor_sets[i];
+    descriptor_write.dstBinding = 0;
+    descriptor_write.dstArrayElement = 0;
+    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptor_write.descriptorCount = 1;
+    descriptor_write.pBufferInfo = &buffer_info;
+
+    vkUpdateDescriptorSets(device, 1, &descriptor_write, 0, nullptr);
+  }
+
+  return descriptor_sets;
+}
+
 }  // namespace
 
 void RenderCore::InitVulkan(GLFWindow *window) {
@@ -597,12 +675,21 @@ void RenderCore::InitVulkan(GLFWindow *window) {
   CreateSwapChain(window, indices);
   CreateImageViews();
   CreateRenderPass();
-  graphics_pipeline_ = CreateGraphicsPipeline(device_, swap_chain_extent_, pipeline_layout_, render_pass_, VK_POLYGON_MODE_FILL);
+  descriptor_set_layout_ = CreateDescriptorSetLayout(device_);
+  std::tie(pipeline_layout_, graphics_pipeline_) =
+      CreateGraphicsPipeline(device_, swap_chain_extent_, render_pass_, descriptor_set_layout_, VK_POLYGON_MODE_FILL);
   CreateFramebuffers();
   command_pool_ = CreateCommandPool(device, indices);
 
   CreateSyncObjects();
   command_buffers_ = AllocateCommandBuffers(swap_chain_framebuffers_.size(), device, command_pool_);
+
+  uniform_buffers_.reserve(swap_chain_images_.size());
+  for (size_t i = 0; i < swap_chain_images_.size(); i++) {
+    uniform_buffers_.push_back(CreateUniformBuffer(sizeof(UniformBufferObject)));
+  }
+  descriptor_pool_ = CreateDescriptorPool(swap_chain_images_.size(), device_);
+  descriptor_sets_ = CreateDescriptorSets(swap_chain_images_.size(), device_, descriptor_pool_, descriptor_set_layout_, uniform_buffers_);
 }
 
 void RenderCore::CleanupSwapChain() {
@@ -625,6 +712,8 @@ void RenderCore::CleanupSwapChain() {
 
 void RenderCore::Cleanup() {
   CleanupSwapChain();
+
+  vkDestroyDescriptorSetLayout(device_, descriptor_set_layout_, nullptr);
 
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
     vkDestroySemaphore(device_, render_finished_semaphores_[i], nullptr);
@@ -806,7 +895,7 @@ void RenderCore::CreateSyncObjects() {
   }
 }
 
-VkCommandBuffer RenderCore::BeginDraw() {
+std::tuple<VkCommandBuffer, VkPipelineLayout, VkDescriptorSet> RenderCore::BeginDraw() {
   vkWaitForFences(device_, 1, &in_flight_fences_[current_frame_], VK_TRUE, UINT64_MAX);
 
   vkAcquireNextImageKHR(device_, swap_chain_, UINT64_MAX, image_available_semaphores_[current_frame_], VK_NULL_HANDLE, &next_image_index_);
@@ -817,8 +906,9 @@ VkCommandBuffer RenderCore::BeginDraw() {
 
   images_in_flight_[next_image_index_] = in_flight_fences_[current_frame_];
 
-  return StartCommandBuffer(command_buffers_[next_image_index_], swap_chain_framebuffers_[next_image_index_], swap_chain_extent_,
-                            graphics_pipeline_, render_pass_);
+  return std::make_tuple(StartCommandBuffer(command_buffers_[next_image_index_], swap_chain_framebuffers_[next_image_index_],
+                                            swap_chain_extent_, graphics_pipeline_, render_pass_),
+                         pipeline_layout_, descriptor_sets_[next_image_index_]);
 }
 
 void RenderCore::Present(VkCommandBuffer command_buffer) {
@@ -827,6 +917,12 @@ void RenderCore::Present(VkCommandBuffer command_buffer) {
   if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
   }
+
+  UniformBufferObject ubo{};
+  ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.proj = glm::perspective(glm::radians(45.0f), swap_chain_extent_.width / (float)swap_chain_extent_.height, 0.1f, 10.0f);
+  uniform_buffers_[current_frame_]->Update(&ubo);
 
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

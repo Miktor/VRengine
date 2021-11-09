@@ -1,13 +1,20 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
+#include <memory>
+#include <vector>
 #include "common.hpp"
+#include "rendering/buffers.hpp"
 
 namespace vre::rendering {
 
-class IndexBuffer;
-class VertexBuffer;
-
 struct QueueFamilyIndices;
+
+struct UniformBufferObject {
+  glm::mat4 model;
+  glm::mat4 view;
+  glm::mat4 proj;
+};
 
 class RenderCore {
  private:
@@ -32,6 +39,12 @@ class RenderCore {
   VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
   VkPipeline graphics_pipeline_ = VK_NULL_HANDLE;
 
+  VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
+
+  std::vector<std::shared_ptr<UniformBuffer>> uniform_buffers_;
+  VkDescriptorPool descriptor_pool_;
+  std::vector<VkDescriptorSet> descriptor_sets_;
+
   VkCommandPool command_pool_ = VK_NULL_HANDLE;
 
   std::vector<VkCommandBuffer> command_buffers_;
@@ -52,8 +65,9 @@ class RenderCore {
 
   std::shared_ptr<IndexBuffer> CreateIndexBuffer(const std::vector<uint32_t> &indices);
   std::shared_ptr<VertexBuffer> CreateVertexBuffer(const std::vector<glm::vec3> &vertexes);
+  std::shared_ptr<UniformBuffer> CreateUniformBuffer(const VkDeviceSize size);
 
-  VkCommandBuffer BeginDraw();
+  std::tuple<VkCommandBuffer, VkPipelineLayout, VkDescriptorSet> BeginDraw();
   void Present(VkCommandBuffer command_buffer);
 
   void WaitDeviceIdle();

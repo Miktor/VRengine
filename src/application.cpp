@@ -24,12 +24,25 @@ bool Application::ProcessInput(GLFWindow *window, int key, int /*scancode*/, int
     return false;
   }
 
+  if (action == GLFW_PRESS) {
+    switch (key) {
+      case GLFW_KEY_W:
+        break;
+      case GLFW_KEY_A:
+        break;
+      case GLFW_KEY_S:
+        break;
+      case GLFW_KEY_D:
+        break;
+      default:
+        break;
+    }
+  }
+
   return true;
 }
 
 void Application::Run() {
-  PreInit();
-
   InitWindow();
   render_core_.InitVulkan(window_);
 
@@ -56,9 +69,9 @@ void Application::MainLoop() {
   while (glfwWindowShouldClose(window_) == 0) {
     glfwPollEvents();
 
-    auto command_buffer = render_core_.BeginDraw();
+    auto [command_buffer, pipeline_layout, descriptor_set] = render_core_.BeginDraw();
 
-    main_scene_.Render(command_buffer);
+    main_scene_.Render(command_buffer, pipeline_layout, descriptor_set);
 
     render_core_.Present(command_buffer);
   }

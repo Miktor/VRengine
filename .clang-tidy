@@ -1,4 +1,5 @@
 Checks: >
+  *,
   bugprone-*,
   google-*,
   misc-*,
@@ -8,6 +9,18 @@ Checks: >
   readability-*,
   cppcoreguidelines-*,
   hicpp-*,
+  -*-qualified-auto,
+  -openmp-*,
+  -objc-*,
+  -clang-analyzer*,
+  -mpi-*,
+  -llvmlibc-*,
+  -altera-id-dependent-backward-branch,
+  -altera-unroll-loops,
+  -altera-struct-pack-align,
+  -cert-err58-cpp,
+  -fuchsia-statically-constructed-objects,
+  -fuchsia-default-arguments-calls,
   -bugprone-easily-swappable-parameters,
   -cppcoreguidelines-init-variables,
   -cppcoreguidelines-pro-type-reinterpret-cast,
@@ -16,7 +29,7 @@ Checks: >
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-init-variables,
-  -hicpp-signed-bitwise,                                        # VK_MAKE_VERSION
+  -hicpp-signed-bitwise,
   -hicpp-avoid-c-arrays,
   -cppcoreguidelines-avoid-c-arrays,
   -hicpp-no-array-decay,
@@ -39,8 +52,8 @@ Checks: >
   -readability-qualified-auto,
   -bugprone-narrowing-conversions
   
-# Turn all the warnings from the checks above into errors.
-WarningsAsErrors: '*'
+
+WarningsAsErrors: ''
 
 HeaderFilterRegex: '.*\/vrengine\/src\/.*'
 

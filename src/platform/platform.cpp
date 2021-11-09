@@ -14,7 +14,7 @@ std::vector<char> Platform::ReadFile(const std::string &filename) {
     throw std::runtime_error("failed to open file!");
   }
 
-  size_t file_size = (size_t)file.tellg();
+  const auto file_size = file.tellg();
   std::vector<char> buffer(file_size);
 
   file.seekg(0);

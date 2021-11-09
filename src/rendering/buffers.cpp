@@ -102,7 +102,7 @@ std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceS
   vkDestroyBuffer(device, staging_buffer, nullptr);
   vkFreeMemory(device, staging_buffer_memory, nullptr);
 
-  return std::make_shared<T>(buffer, buffer_memory);
+  return std::make_shared<T>(device, buffer, buffer_memory, buffer_size);
 }
 
 }  // namespace
@@ -117,6 +117,16 @@ std::shared_ptr<rendering::IndexBuffer> RenderCore::CreateIndexBuffer(const std:
   return CrateBufferThroughtStaging<rendering::IndexBuffer>(reinterpret_cast<const void *>(indices.data()),
                                                             sizeof(indices[0]) * indices.size(), device_, physical_device_, command_pool_,
                                                             graphics_queue_);
+}
+
+std::shared_ptr<UniformBuffer> RenderCore::CreateUniformBuffer(const VkDeviceSize size) {
+  VkBuffer buffer;
+  VkDeviceMemory buffer_memory;
+
+  CreateBuffer(buffer, buffer_memory, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, device_, physical_device_);
+
+  return std::make_shared<UniformBuffer>(device_, buffer, buffer_memory, size);
 }
 
 VkVertexInputBindingDescription Vertex::GetBindingDescription() {

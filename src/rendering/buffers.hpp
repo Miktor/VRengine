@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
 #include "common.hpp"
 
 namespace vre {
@@ -11,8 +12,18 @@ namespace rendering {
 // TODO(dmitrygladky): destructors
 class Buffer {
  public:
-  Buffer(VkBuffer buffer, VkDeviceMemory buffer_memory) : buffer(buffer), buffer_memory(buffer_memory) {}
+  Buffer(VkDevice device, VkBuffer buffer, VkDeviceMemory buffer_memory, VkDeviceSize size)
+      : device(device), buffer(buffer), buffer_memory(buffer_memory), size(size) {}
 
+  void Update(const void *data) {
+    void *buffer_data = nullptr;
+    vkMapMemory(device, buffer_memory, 0, size, 0, &buffer_data);
+    memcpy(buffer_data, data, size);
+    vkUnmapMemory(device, buffer_memory);
+  }
+
+  VkDevice device;
+  VkDeviceSize size;
   VkBuffer buffer;
   VkDeviceMemory buffer_memory;
 };
@@ -29,6 +40,13 @@ class VertexBuffer : public Buffer {
   using Buffer::Buffer;
 
   static constexpr VkBufferUsageFlagBits kBufferBit = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+};
+
+class UniformBuffer : public Buffer {
+ public:
+  using Buffer::Buffer;
+
+  static constexpr VkBufferUsageFlagBits kBufferBit = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 };
 
 struct Vertex {

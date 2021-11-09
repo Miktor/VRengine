@@ -1,4 +1,5 @@
 #include "mesh.hpp"
+#include <vulkan/vulkan_core.h>
 
 #include "application.hpp"
 #include "rendering/render_core.hpp"
@@ -34,12 +35,14 @@ void Mesh::InitializeVulkan(RenderCore &renderer) {
   }
 }
 
-void Mesh::Render(VkCommandBuffer command_buffers) {
+void Mesh::Render(VkCommandBuffer command_buffers, VkPipelineLayout pipeline_layout, VkDescriptorSet descriptor_set) {
   VkBuffer vertex_buffers[] = {vertex_buffer_->buffer};
   VkDeviceSize offsets[] = {0};
 
   vkCmdBindVertexBuffers(command_buffers, 0, 1, vertex_buffers, offsets);
   vkCmdBindIndexBuffer(command_buffers, index_buffer_->buffer, 0, VK_INDEX_TYPE_UINT32);
+
+  vkCmdBindDescriptorSets(command_buffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_set, 0, nullptr);
 
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {

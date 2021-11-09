@@ -13,12 +13,12 @@ constexpr uint32_t kHeight = 600;
 
 }  // namespace
 
-static void KeyCallback(GLFWindow *window, int key, int scancode, int action, int mods) {
+static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   auto *app = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
   app->ProcessInput(window, key, scancode, action, mods);
 }
 
-bool Application::ProcessInput(GLFWindow *window, int key, int /*scancode*/, int action, int /*mods*/) {
+bool Application::ProcessInput(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
     return false;

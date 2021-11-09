@@ -58,7 +58,7 @@ class RenderCore {
   uint32_t next_image_index_ = 0;
 
  public:
-  void InitVulkan(GLFWindow *window);
+  void InitVulkan(GLFWwindow *window);
 
   void Cleanup();
   void CleanupSwapChain();
@@ -73,7 +73,7 @@ class RenderCore {
   void WaitDeviceIdle();
 
  private:
-  void CreateSwapChain(GLFWindow *window, const QueueFamilyIndices &indices);
+  void CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &indices);
   void CreateImageViews();
   void CreateRenderPass();
   void CreateFramebuffers();

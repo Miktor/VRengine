@@ -227,7 +227,9 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice device) {
 
   std::set<std::string> required_extensions(kDeviceExtensions.begin(), kDeviceExtensions.end());
 
+  SPDLOG_INFO("Availible device extension:");
   for (const auto &extension : available_extensions) {
+    SPDLOG_INFO("\t{}", extension.extensionName);
     required_extensions.erase(extension.extensionName);
   }
 
@@ -272,7 +274,7 @@ bool IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
   return indices.IsComplete() && extensions_supported && swap_chain_adequate;
 }
 
-VkSurfaceKHR CreateSurface(VkInstance instance, GLFWindow *window) {
+VkSurfaceKHR CreateSurface(VkInstance instance, GLFWwindow *window) {
   VkSurfaceKHR surface;
 
   if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
@@ -430,7 +432,7 @@ auto CreateGraphicsPipeline(VkDevice device, const VkExtent2D &swap_chain_extent
   rasterizer.polygonMode = mode;
   rasterizer.lineWidth = 1.0F;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+  rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
   VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -510,7 +512,7 @@ VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &avai
   return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D ChooseSwapExtent(GLFWindow *window, const VkSurfaceCapabilitiesKHR &capabilities) {
+VkExtent2D ChooseSwapExtent(GLFWwindow *window, const VkSurfaceCapabilitiesKHR &capabilities) {
   if (capabilities.currentExtent.width != UINT32_MAX) {
     return capabilities.currentExtent;
   }
@@ -633,7 +635,8 @@ std::vector<VkDescriptorSet> CreateDescriptorSets(const uint32_t count, VkDevice
   alloc_info.descriptorSetCount = count;
   alloc_info.pSetLayouts = layouts.data();
 
-  std::vector<VkDescriptorSet> descriptor_sets(count);
+  std::vector<VkDescriptorSet> descriptor_sets;
+  descriptor_sets.resize(count);
   if (vkAllocateDescriptorSets(device, &alloc_info, descriptor_sets.data()) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate descriptor sets!");
   }
@@ -661,7 +664,7 @@ std::vector<VkDescriptorSet> CreateDescriptorSets(const uint32_t count, VkDevice
 
 }  // namespace
 
-void RenderCore::InitVulkan(GLFWindow *window) {
+void RenderCore::InitVulkan(GLFWwindow *window) {
   instance_ = CreateInstance();
   debug_messenger_ = SetupDebugMessenger(instance_);
   surface_ = CreateSurface(instance_, window);
@@ -690,6 +693,15 @@ void RenderCore::InitVulkan(GLFWindow *window) {
   }
   descriptor_pool_ = CreateDescriptorPool(swap_chain_images_.size(), device_);
   descriptor_sets_ = CreateDescriptorSets(swap_chain_images_.size(), device_, descriptor_pool_, descriptor_set_layout_, uniform_buffers_);
+
+  for (auto &ubo : uniform_buffers_) {
+    UniformBufferObject data{};
+    data.model = glm::mat4(1.0f);
+    data.view = glm::lookAt(glm::vec3(0.0f, 3.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    data.proj = glm::perspective(glm::radians(60.0f), 1.0f, 0.01f, 100.0f);
+    data.proj[1][1] *= -1;
+    ubo->Update(&data);
+  }
 }
 
 void RenderCore::CleanupSwapChain() {
@@ -733,7 +745,7 @@ void RenderCore::Cleanup() {
   vkDestroyInstance(instance_, nullptr);
 }
 
-void RenderCore::CreateSwapChain(GLFWindow *window, const QueueFamilyIndices &indices) {
+void RenderCore::CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &indices) {
   SwapChainSupportDetails swap_chain_support = QuerySwapChainSupport(physical_device_, surface_);
 
   VkSurfaceFormatKHR surface_format = ChooseSwapSurfaceFormat(swap_chain_support.formats_);
@@ -917,12 +929,6 @@ void RenderCore::Present(VkCommandBuffer command_buffer) {
   if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
   }
-
-  UniformBufferObject ubo{};
-  ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.proj = glm::perspective(glm::radians(45.0f), swap_chain_extent_.width / (float)swap_chain_extent_.height, 0.1f, 10.0f);
-  uniform_buffers_[current_frame_]->Update(&ubo);
 
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

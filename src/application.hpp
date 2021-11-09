@@ -25,10 +25,10 @@ class Application {
  public:
   void Run();
 
-  virtual bool ProcessInput(GLFWindow *window, int key, int scancode, int action, int mods);
+  virtual bool ProcessInput(GLFWwindow *window, int key, int scancode, int action, int mods);
 
  protected:
-  GLFWindow *window_ = nullptr;
+  GLFWwindow *window_ = nullptr;
 
   rendering::RenderCore render_core_;
 

@@ -21,17 +21,19 @@ IF(MSVC)
     add_definitions(-DNOMINMAX)
 ENDIF()
 
-
 set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
 set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
 set(TINYGLTF_USE_CPP14 ON CACHE INTERNAL "" FORCE)
 set(TINYGLTF_BUILD_LOADER_EXAMPLE OFF CACHE INTERNAL "" FORCE)
 add_subdirectory(external/tinygltf)
 
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(external/glfw)
 
 find_package(Vulkan REQUIRED)
 find_package(GLM REQUIRED)
-find_package(glfw3 REQUIRED)
 find_package(spdlog REQUIRED)
 
 include_directories(${GLM_INCLUDE_DIR})
@@ -59,11 +61,13 @@ ENDIF()
 target_include_directories(vrengine PRIVATE
     src
     Vulkan::Vulkan
-    external)
+    external
+    external/glfw/include)
 
 target_link_libraries(vrengine PRIVATE Vulkan::Vulkan)
-target_link_libraries(vrengine PRIVATE glfw)
 target_link_libraries(vrengine PRIVATE spdlog::spdlog)
+target_link_libraries(vrengine PRIVATE glfw)
+
 
 add_subdirectory(assets)
 add_dependencies(vrengine shaders_build)

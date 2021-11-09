@@ -9,8 +9,7 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
 )
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
-  get_filename_component(FILE_NAME ${GLSL} NAME)
-  set(SPIRV "${PROJECT_BINARY_DIR}/${FILE_NAME}.spv")
+  set(SPIRV "${GLSL}.spv")
   add_custom_command(
     OUTPUT ${SPIRV}
     COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
@@ -22,5 +21,3 @@ add_custom_target(
     shaders_build
     DEPENDS ${SPIRV_BINARY_FILES}
     )
-
-file(COPY ${SPIRV_BINARY_FILES} DESTINATION ${PROJECT_SOURCE_DIR})

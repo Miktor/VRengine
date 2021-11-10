@@ -21,22 +21,7 @@ IF(MSVC)
     add_definitions(-DNOMINMAX)
 ENDIF()
 
-set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
-set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
-set(TINYGLTF_USE_CPP14 ON CACHE INTERNAL "" FORCE)
-set(TINYGLTF_BUILD_LOADER_EXAMPLE OFF CACHE INTERNAL "" FORCE)
-add_subdirectory(external/tinygltf)
-
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(external/glfw)
-
-set(SHADERC_THIRD_PARTY_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external" CACHE STRING "" FORCE)
-set(SHADERC_SKIP_INSTALL ON CACHE BOOL "" FORCE)
-set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
-set(SHADERC_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
-add_subdirectory(external/shaderc)
+add_subdirectory(external)
 
 find_package(Vulkan REQUIRED)
 find_package(GLM REQUIRED)
@@ -48,13 +33,8 @@ file(GLOB_RECURSE SOURCES
      "src/*.h"
      "src/*.cpp"
 )
-
 AUX_SOURCE_DIRECTORY(src SOURCES)
 add_executable(vrengine ${SOURCES})
-
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_compile_definitions(vrengine PRIVATE VK_USE_PLATFORM_WIN32_KHR)
@@ -73,6 +53,7 @@ target_include_directories(vrengine PRIVATE
 target_link_libraries(vrengine PRIVATE Vulkan::Vulkan)
 target_link_libraries(vrengine PRIVATE spdlog::spdlog)
 target_link_libraries(vrengine PRIVATE glfw)
+target_link_libraries(vrengine PRIVATE shaderc)
 
 
 add_subdirectory(assets)

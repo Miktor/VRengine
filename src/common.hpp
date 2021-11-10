@@ -15,7 +15,7 @@
 #include <GLFW/glfw3.h>
 
 #include <spdlog/spdlog.h>
-#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_core.h>

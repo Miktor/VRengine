@@ -5,7 +5,7 @@
 namespace vre::platform {
 
 struct Platform {
-  static std::vector<char> ReadFile(const std::string &filename);
+  static std::string ReadFile(const std::string &filename);
 };
 
 }  // namespace vre::platform

@@ -7,7 +7,7 @@
 
 namespace vre::platform {
 
-std::vector<char> Platform::ReadFile(const std::string &filename) {
+std::string Platform::ReadFile(const std::string &filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
@@ -22,7 +22,7 @@ std::vector<char> Platform::ReadFile(const std::string &filename) {
 
   file.close();
 
-  return buffer;
+  return std::string(buffer.data(), file_size);
 }
 
 }  // namespace vre::platform

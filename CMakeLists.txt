@@ -55,10 +55,6 @@ target_link_libraries(vrengine PRIVATE spdlog::spdlog)
 target_link_libraries(vrengine PRIVATE glfw)
 target_link_libraries(vrengine PRIVATE shaderc)
 
-
-add_subdirectory(assets)
-add_dependencies(vrengine shaders_build)
-
 file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.h)
 
 add_custom_target(

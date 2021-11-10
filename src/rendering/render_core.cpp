@@ -5,9 +5,10 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include "buffers.hpp"
 #include "common.hpp"
 #include "platform/platform.hpp"
+#include "buffers.hpp"
+#include "shader.hpp"
 
 namespace vre::rendering {
 
@@ -354,27 +355,13 @@ auto CreateLogicalDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
   return std::make_tuple(device, indices);
 }
 
-VkShaderModule CreateShaderModule(VkDevice device, const std::vector<char> &code) {
-  VkShaderModuleCreateInfo create_info{};
-  create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  create_info.codeSize = code.size();
-  create_info.pCode = reinterpret_cast<const uint32_t *>(code.data());
-
-  VkShaderModule shader_module;
-  if (vkCreateShaderModule(device, &create_info, nullptr, &shader_module) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create shader module!");
-  }
-
-  return shader_module;
-}
-
 auto CreateGraphicsPipeline(VkDevice device, const VkExtent2D &swap_chain_extent, VkRenderPass render_pass,
                             VkDescriptorSetLayout descriptor_set_layout, VkPolygonMode mode) {
-  auto vert_shader_code = platform::Platform::ReadFile("assets/shaders/shader.vert.spv");
-  auto frag_shader_code = platform::Platform::ReadFile("assets/shaders/shader.frag.spv");
+  auto vert_shader = Shader(device, Shader::kVertex, "assets/shaders/shader.vert");
+  auto frag_shader = Shader(device, Shader::kFragment, "assets/shaders/shader.frag");
 
-  VkShaderModule vert_shader_module = CreateShaderModule(device, vert_shader_code);
-  VkShaderModule frag_shader_module = CreateShaderModule(device, frag_shader_code);
+  VkShaderModule vert_shader_module = vert_shader.Init();
+  VkShaderModule frag_shader_module = frag_shader.Init();
 
   VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
   vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

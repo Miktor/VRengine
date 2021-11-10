@@ -32,6 +32,11 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/glfw)
 
+set(SPIRV_CROSS_ENABLE_C_API OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory(external/SPIRV-Cross)
+
 find_package(Vulkan REQUIRED)
 find_package(GLM REQUIRED)
 find_package(spdlog REQUIRED)
@@ -67,6 +72,7 @@ target_include_directories(vrengine PRIVATE
 target_link_libraries(vrengine PRIVATE Vulkan::Vulkan)
 target_link_libraries(vrengine PRIVATE spdlog::spdlog)
 target_link_libraries(vrengine PRIVATE glfw)
+target_link_libraries(vrengine PRIVATE spirv-cross-core)
 
 
 add_subdirectory(assets)

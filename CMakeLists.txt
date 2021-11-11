@@ -54,6 +54,7 @@ target_link_libraries(vrengine PRIVATE Vulkan::Vulkan)
 target_link_libraries(vrengine PRIVATE spdlog::spdlog)
 target_link_libraries(vrengine PRIVATE glfw)
 target_link_libraries(vrengine PRIVATE shaderc)
+target_link_libraries(vrengine PRIVATE spirv-cross-core)
 
 file(GLOB_RECURSE ALL_SOURCE_FILES *.cpp *.h)
 

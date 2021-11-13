@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 
 #include <shaderc/shaderc.hpp>
 #include <spirv-cross/spirv_cross.hpp>
@@ -29,7 +30,7 @@ shaderc::SpvCompilationResult Compile(const std::string &data, const std::string
 
   // options.SetOptimizationLevel(shaderc_optimization_level_size);
 
-  auto result = compiler.CompileGlslToSpv(data.c_str(), ToShadercType(type), path.data(), options);
+  auto result = compiler.CompileGlslToSpv(data, ToShadercType(type), path.data(), options);
 
   if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
     throw std::runtime_error(result.GetErrorMessage());

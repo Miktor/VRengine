@@ -565,9 +565,9 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
 
   for (auto &ubo : uniform_buffers_) {
     UniformBufferObject data{};
-    data.model = glm::mat4(1.0f);
-    data.view = glm::lookAt(glm::vec3(0.0f, 3.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    data.proj = glm::perspective(glm::radians(60.0f), 1.0f, 0.01f, 100.0f);
+    data.model = glm::mat4(1.0F);
+    data.view = glm::lookAt(glm::vec3(0.0F, 3.0F, 5.0F), glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F));
+    data.proj = glm::perspective(glm::radians(60.0F), 1.0F, 0.01F, 100.0F);
     data.proj[1][1] *= -1;
     ubo->Update(&data);
   }

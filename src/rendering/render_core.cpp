@@ -1,13 +1,14 @@
 #include "render_core.hpp"
 
 #include <cstddef>
+#include <memory>
 #include <tuple>
 
 #include <vulkan/vulkan_core.h>
 
+#include "buffers.hpp"
 #include "common.hpp"
 #include "platform/platform.hpp"
-#include "buffers.hpp"
 #include "shader.hpp"
 
 namespace vre::rendering {
@@ -355,130 +356,6 @@ auto CreateLogicalDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
   return std::make_tuple(device, indices);
 }
 
-auto CreateGraphicsPipeline(VkDevice device, const VkExtent2D &swap_chain_extent, VkRenderPass render_pass,
-                            VkDescriptorSetLayout descriptor_set_layout, VkPolygonMode mode) {
-  auto vert_shader = Shader(device, Shader::kVertex, "assets/shaders/shader.vert");
-  auto frag_shader = Shader(device, Shader::kFragment, "assets/shaders/shader.frag");
-
-  VkShaderModule vert_shader_module = vert_shader.Init();
-  VkShaderModule frag_shader_module = frag_shader.Init();
-
-  VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
-  vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-  vert_shader_stage_info.module = vert_shader_module;
-  vert_shader_stage_info.pName = "main";
-
-  VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
-  frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  frag_shader_stage_info.module = frag_shader_module;
-  frag_shader_stage_info.pName = "main";
-
-  VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
-
-  VkPipelineVertexInputStateCreateInfo vertex_input_info{};
-  vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-  auto binding_description = Vertex::GetBindingDescription();
-  auto attribute_descriptions = Vertex::GetAttributeDescriptions();
-
-  vertex_input_info.vertexBindingDescriptionCount = 1;
-  vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
-  vertex_input_info.pVertexBindingDescriptions = &binding_description;
-  vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
-
-  VkPipelineInputAssemblyStateCreateInfo input_assembly{};
-  input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  input_assembly.primitiveRestartEnable = VK_FALSE;
-
-  VkViewport viewport{};
-  viewport.x = 0.0F;
-  viewport.y = 0.0F;
-  viewport.width = static_cast<float>(swap_chain_extent.width);
-  viewport.height = static_cast<float>(swap_chain_extent.height);
-  viewport.minDepth = 0.0F;
-  viewport.maxDepth = 1.0F;
-
-  VkRect2D scissor{};
-  scissor.offset = {0, 0};
-  scissor.extent = swap_chain_extent;
-
-  VkPipelineViewportStateCreateInfo viewport_state{};
-  viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  viewport_state.viewportCount = 1;
-  viewport_state.pViewports = &viewport;
-  viewport_state.scissorCount = 1;
-  viewport_state.pScissors = &scissor;
-
-  VkPipelineRasterizationStateCreateInfo rasterizer{};
-  rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-  rasterizer.depthClampEnable = VK_FALSE;
-  rasterizer.rasterizerDiscardEnable = VK_FALSE;
-  rasterizer.polygonMode = mode;
-  rasterizer.lineWidth = 1.0F;
-  rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-  rasterizer.depthBiasEnable = VK_FALSE;
-
-  VkPipelineMultisampleStateCreateInfo multisampling{};
-  multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-  multisampling.sampleShadingEnable = VK_FALSE;
-  multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-  VkPipelineColorBlendAttachmentState color_blend_attachment{};
-  color_blend_attachment.colorWriteMask =
-      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-  color_blend_attachment.blendEnable = VK_FALSE;
-
-  VkPipelineColorBlendStateCreateInfo color_blending{};
-  color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-  color_blending.logicOpEnable = VK_FALSE;
-  color_blending.logicOp = VK_LOGIC_OP_COPY;
-  color_blending.attachmentCount = 1;
-  color_blending.pAttachments = &color_blend_attachment;
-  color_blending.blendConstants[0] = 0.0F;
-  color_blending.blendConstants[1] = 0.0F;
-  color_blending.blendConstants[2] = 0.0F;
-  color_blending.blendConstants[3] = 0.0F;
-
-  VkPipelineLayoutCreateInfo pipeline_layout_info{};
-  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = 1;
-  pipeline_layout_info.pSetLayouts = &descriptor_set_layout;
-
-  VkPipelineLayout pipeline_layout;
-  if (vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create pipeline layout!");
-  }
-
-  VkGraphicsPipelineCreateInfo pipeline_info{};
-  pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-  pipeline_info.stageCount = 2;
-  pipeline_info.pStages = shader_stages;
-  pipeline_info.pVertexInputState = &vertex_input_info;
-  pipeline_info.pInputAssemblyState = &input_assembly;
-  pipeline_info.pViewportState = &viewport_state;
-  pipeline_info.pRasterizationState = &rasterizer;
-  pipeline_info.pMultisampleState = &multisampling;
-  pipeline_info.pColorBlendState = &color_blending;
-  pipeline_info.layout = pipeline_layout;
-  pipeline_info.renderPass = render_pass;
-  pipeline_info.subpass = 0;
-  pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-
-  VkPipeline graphics_pipeline;
-  if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create graphics pipeline!");
-  }
-
-  vkDestroyShaderModule(device, frag_shader_module, nullptr);
-  vkDestroyShaderModule(device, vert_shader_module, nullptr);
-
-  return std::make_tuple(pipeline_layout, graphics_pipeline);
-}
-
 VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &available_formats) {
   for (const auto &available_format : available_formats) {
     if (available_format.format == VK_FORMAT_B8G8R8A8_SRGB && available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -547,7 +424,7 @@ std::vector<VkCommandBuffer> AllocateCommandBuffers(uint8_t count, VkDevice devi
 }
 
 VkCommandBuffer StartCommandBuffer(VkCommandBuffer command_buffer, VkFramebuffer frame_buffer, const VkExtent2D &swap_chain_extent,
-                                   VkPipeline graphics_pipeline, VkRenderPass render_pass) {
+                                   Pipeline pipeline, VkRenderPass render_pass) {
   VkCommandBufferBeginInfo begin_info{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -567,7 +444,7 @@ VkCommandBuffer StartCommandBuffer(VkCommandBuffer command_buffer, VkFramebuffer
   render_pass_info.pClearValues = &clear_color;
 
   vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetPipeline());
 
   return command_buffer;
 }
@@ -666,8 +543,13 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
   CreateImageViews();
   CreateRenderPass();
   descriptor_set_layout_ = CreateDescriptorSetLayout(device_);
-  std::tie(pipeline_layout_, graphics_pipeline_) =
-      CreateGraphicsPipeline(device_, swap_chain_extent_, render_pass_, descriptor_set_layout_, VK_POLYGON_MODE_FILL);
+
+  auto material = Material(Shader(device, Shader::kFragment, "assets/shaders/shader.frag"),
+                           Shader(device, Shader::kVertex, "assets/shaders/shader.vert"));
+
+  pipeline_ = std::make_shared<Pipeline>(device_);
+  pipeline_->CreateGraphicsPipeline(render_pass_, material, swap_chain_extent_, VK_POLYGON_MODE_FILL);
+
   CreateFramebuffers();
   command_pool_ = CreateCommandPool(device, indices);
 
@@ -698,8 +580,6 @@ void RenderCore::CleanupSwapChain() {
 
   vkFreeCommandBuffers(device_, command_pool_, static_cast<uint32_t>(command_buffers_.size()), command_buffers_.data());
 
-  vkDestroyPipeline(device_, graphics_pipeline_, nullptr);
-  vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
   vkDestroyRenderPass(device_, render_pass_, nullptr);
 
   for (auto *image_view : swap_chain_image_views_) {
@@ -906,8 +786,8 @@ std::tuple<VkCommandBuffer, VkPipelineLayout, VkDescriptorSet> RenderCore::Begin
   images_in_flight_[next_image_index_] = in_flight_fences_[current_frame_];
 
   return std::make_tuple(StartCommandBuffer(command_buffers_[next_image_index_], swap_chain_framebuffers_[next_image_index_],
-                                            swap_chain_extent_, graphics_pipeline_, render_pass_),
-                         pipeline_layout_, descriptor_sets_[next_image_index_]);
+                                            swap_chain_extent_, *pipeline_, render_pass_),
+                         pipeline_->GetLayoput(), descriptor_sets_[next_image_index_]);
 }
 
 void RenderCore::Present(VkCommandBuffer command_buffer) {

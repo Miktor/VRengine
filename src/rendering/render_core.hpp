@@ -3,8 +3,11 @@
 #include <vulkan/vulkan_core.h>
 #include <memory>
 #include <vector>
+
 #include "common.hpp"
 #include "rendering/buffers.hpp"
+#include "rendering/render_pass.hpp"
+#include "rendering/pipeline.hpp"
 
 namespace vre::rendering {
 
@@ -36,8 +39,7 @@ class RenderCore {
   std::vector<VkFramebuffer> swap_chain_framebuffers_;
 
   VkRenderPass render_pass_ = VK_NULL_HANDLE;
-  VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
-  VkPipeline graphics_pipeline_ = VK_NULL_HANDLE;
+  std::shared_ptr<Pipeline> pipeline_;
 
   VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
 

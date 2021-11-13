@@ -1,10 +1,30 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include <vulkan/vulkan_core.h>
 
 namespace vre::rendering {
+
+struct ReflectionData {
+  struct Input {
+    uint32_t location;
+    uint32_t offset;
+    uint32_t width;
+    std::string name;
+  };
+
+  struct UniformBuffer {
+    uint32_t set;
+    uint32_t binding;
+    uint32_t size;
+    std::string name;
+  };
+
+  std::vector<Input> inputs;
+  std::vector<UniformBuffer> uniform_buffers;
+};
 
 class Shader {
  public:
@@ -15,13 +35,34 @@ class Shader {
 
   Shader(VkDevice device, Type type, const std::string &path);
 
-  VkShaderModule Init();
+  VkShaderModule GetShaderModule() const { return shader_module_; }
+
+  const std::vector<ReflectionData::Input> &GetInputs() const { return reflection_data_.inputs; }
+  const std::vector<ReflectionData::UniformBuffer> &GetUniformBuffers() const { return reflection_data_.uniform_buffers; }
 
  private:
   VkDevice device_;
 
   const std::string path_;
   const Type type_;
+
+  ReflectionData reflection_data_;
+
+  VkShaderModule shader_module_;
+};
+
+class Material {
+ public:
+  Material(Shader &&fragment, Shader &&vertex) : fragment_(std::move(fragment)), vertex_(std::move(vertex)) {}
+
+  std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const;
+  std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>> GetInputBindings() const;
+  VkDescriptorSetLayout GetDescriptorSetLayout(VkDevice device);
+
+ private:
+  Shader fragment_;
+  Shader vertex_;
+  VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
 };
 
 }  // namespace vre::rendering

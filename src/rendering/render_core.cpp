@@ -774,7 +774,7 @@ void RenderCore::CreateSyncObjects() {
   }
 }
 
-std::tuple<VkCommandBuffer, VkPipelineLayout, VkDescriptorSet> RenderCore::BeginDraw() {
+RenderContext RenderCore::BeginDraw() {
   vkWaitForFences(device_, 1, &in_flight_fences_[current_frame_], VK_TRUE, UINT64_MAX);
 
   vkAcquireNextImageKHR(device_, swap_chain_, UINT64_MAX, image_available_semaphores_[current_frame_], VK_NULL_HANDLE, &next_image_index_);
@@ -785,37 +785,48 @@ std::tuple<VkCommandBuffer, VkPipelineLayout, VkDescriptorSet> RenderCore::Begin
 
   images_in_flight_[next_image_index_] = in_flight_fences_[current_frame_];
 
-  return std::make_tuple(StartCommandBuffer(command_buffers_[next_image_index_], swap_chain_framebuffers_[next_image_index_],
-                                            swap_chain_extent_, *pipeline_, render_pass_),
-                         pipeline_->GetLayoput(), descriptor_sets_[next_image_index_]);
+  RenderContext context;
+
+  context.command_buffer = StartCommandBuffer(command_buffers_[next_image_index_], swap_chain_framebuffers_[next_image_index_],
+                                              swap_chain_extent_, *pipeline_, render_pass_);
+  context.pipeline_layout = pipeline_->GetLayoput();
+  context.uniform_buffer = uniform_buffers_[next_image_index_];
+  context.descriptor_set = descriptor_sets_[next_image_index_];
+  context.swap_chain_framebuffer = swap_chain_framebuffers_[next_image_index_];
+  context.image_available_semaphore = image_available_semaphores_[current_frame_];
+  context.render_finished_semaphore = render_finished_semaphores_[current_frame_];
+  context.in_flight_fence = in_flight_fences_[current_frame_];
+  context.images_in_flight = images_in_flight_[next_image_index_];
+
+  return context;
 }
 
-void RenderCore::Present(VkCommandBuffer command_buffer) {
-  vkCmdEndRenderPass(command_buffer);
+void RenderCore::Present(RenderContext &context) {
+  vkCmdEndRenderPass(context.command_buffer);
 
-  if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
+  if (vkEndCommandBuffer(context.command_buffer) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
   }
 
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-  VkSemaphore wait_semaphores[] = {image_available_semaphores_[current_frame_]};
+  VkSemaphore wait_semaphores[] = {context.image_available_semaphore};
   VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   submit_info.waitSemaphoreCount = 1;
   submit_info.pWaitSemaphores = wait_semaphores;
   submit_info.pWaitDstStageMask = wait_stages;
 
   submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &command_buffer;
+  submit_info.pCommandBuffers = &context.command_buffer;
 
-  VkSemaphore signal_semaphores[] = {render_finished_semaphores_[current_frame_]};
+  VkSemaphore signal_semaphores[] = {context.render_finished_semaphore};
   submit_info.signalSemaphoreCount = 1;
   submit_info.pSignalSemaphores = signal_semaphores;
 
-  vkResetFences(device_, 1, &in_flight_fences_[current_frame_]);
+  vkResetFences(device_, 1, &context.in_flight_fence);
 
-  if (vkQueueSubmit(graphics_queue_, 1, &submit_info, in_flight_fences_[current_frame_]) != VK_SUCCESS) {
+  if (vkQueueSubmit(graphics_queue_, 1, &submit_info, context.in_flight_fence) != VK_SUCCESS) {
     throw std::runtime_error("failed to submit draw command buffer!");
   }
 

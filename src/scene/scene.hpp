@@ -5,6 +5,7 @@
 namespace vre {
 
 namespace rendering {
+struct RenderContext;
 class RenderCore;
 }
 
@@ -19,7 +20,7 @@ class Scene {
   void InitializeVulkan(rendering::RenderCore &renderer);
 
   void Update();
-  void Render(VkCommandBuffer command_buffers, VkPipelineLayout pipeline_layout, VkDescriptorSet descriptor_set);
+  void Render(rendering::RenderContext& context);
 
  private:
   std::vector<std::shared_ptr<Node>> root_nodes_;

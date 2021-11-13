@@ -69,11 +69,11 @@ void Application::MainLoop() {
   while (glfwWindowShouldClose(window_) == 0) {
     glfwPollEvents();
 
-    auto [command_buffer, pipeline_layout, descriptor_set] = render_core_.BeginDraw();
+    auto context = render_core_.BeginDraw();
 
-    main_scene_.Render(command_buffer, pipeline_layout, descriptor_set);
+    main_scene_.Render(context);
 
-    render_core_.Present(command_buffer);
+    render_core_.Present(context);
   }
 
   render_core_.WaitDeviceIdle();

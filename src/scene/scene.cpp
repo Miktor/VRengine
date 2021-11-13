@@ -27,16 +27,16 @@ void Scene::InitializeVulkan(rendering::RenderCore &renderer) {
 
 void Scene::Update() {}
 
-void Scene::Render(VkCommandBuffer command_buffers, VkPipelineLayout pipeline_layout, VkDescriptorSet descriptor_set) {
+void Scene::Render(rendering::RenderContext& context) {
   for (auto &node : root_nodes_) {
     for (auto &child : node->childrens_) {
       if (child->mesh_) {
-        child->mesh_->Render(command_buffers, pipeline_layout, descriptor_set);
+        child->mesh_->Render(context);
       }
     }
 
     if (node->mesh_) {
-      node->mesh_->Render(command_buffers, pipeline_layout, descriptor_set);
+      node->mesh_->Render(context);
     }
   }
 }

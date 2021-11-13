@@ -3,6 +3,7 @@
 #include "common.hpp"
 
 #include "rendering/buffers.hpp"
+#include "rendering/render_core.hpp"
 
 namespace vre ::rendering {
 
@@ -21,7 +22,7 @@ class Mesh {
   void AddPrimitive(std::vector<glm::vec3> vert, const std::vector<uint32_t> &indicies);
 
   void InitializeVulkan(RenderCore &renderer);
-  void Render(VkCommandBuffer command_buffers, VkPipelineLayout pipeline_layout, VkDescriptorSet descriptor_set);
+  void Render(rendering::RenderContext &context);
 
  private:
   std::vector<Primitive> primitives_;

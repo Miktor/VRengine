@@ -35,18 +35,18 @@ void Mesh::InitializeVulkan(RenderCore &renderer) {
   }
 }
 
-void Mesh::Render(VkCommandBuffer command_buffers, VkPipelineLayout pipeline_layout, VkDescriptorSet descriptor_set) {
+void Mesh::Render(rendering::RenderContext& context) {
   VkBuffer vertex_buffers[] = {vertex_buffer_->buffer};
   VkDeviceSize offsets[] = {0};
 
-  vkCmdBindVertexBuffers(command_buffers, 0, 1, vertex_buffers, offsets);
-  vkCmdBindIndexBuffer(command_buffers, index_buffer_->buffer, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(context.command_buffer, 0, 1, vertex_buffers, offsets);
+  vkCmdBindIndexBuffer(context.command_buffer, index_buffer_->buffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(command_buffers, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_set, 0, nullptr);
+  vkCmdBindDescriptorSets(context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, context.pipeline_layout, 0, 1, &context.descriptor_set, 0, nullptr);
 
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {
-    vkCmdDrawIndexed(command_buffers, static_cast<uint32_t>(primitive.index_count_), 1, 0, 0, 0);
+    vkCmdDrawIndexed(context.command_buffer, static_cast<uint32_t>(primitive.index_count_), 1, 0, 0, 0);
   }
 }
 

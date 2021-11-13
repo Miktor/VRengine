@@ -14,13 +14,6 @@ struct SwapChainSupportDetails {
   std::vector<VkPresentModeKHR> present_modes_;
 };
 
-struct Vertex {
-  glm::vec3 pos_;
-
-  static VkVertexInputBindingDescription GetBindingDescription();
-  static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
-};
-
 class Application {
  public:
   void Run();

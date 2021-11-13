@@ -6,8 +6,8 @@
 
 #include "common.hpp"
 #include "rendering/buffers.hpp"
-#include "rendering/render_pass.hpp"
 #include "rendering/pipeline.hpp"
+#include "rendering/render_pass.hpp"
 
 namespace vre::rendering {
 
@@ -17,6 +17,22 @@ struct UniformBufferObject {
   glm::mat4 model;
   glm::mat4 view;
   glm::mat4 proj;
+};
+
+struct RenderContext {
+  VkCommandBuffer command_buffer;
+  VkPipelineLayout pipeline_layout;
+  
+  std::shared_ptr<UniformBuffer> uniform_buffer;
+
+  VkDescriptorSet descriptor_set;
+  VkFramebuffer swap_chain_framebuffer;
+
+  VkSemaphore image_available_semaphore;
+  VkSemaphore render_finished_semaphore;
+
+  VkFence in_flight_fence;
+  VkFence images_in_flight;
 };
 
 class RenderCore {
@@ -69,8 +85,8 @@ class RenderCore {
   std::shared_ptr<VertexBuffer> CreateVertexBuffer(const std::vector<glm::vec3> &vertexes);
   std::shared_ptr<UniformBuffer> CreateUniformBuffer(const VkDeviceSize size);
 
-  std::tuple<VkCommandBuffer, VkPipelineLayout, VkDescriptorSet> BeginDraw();
-  void Present(VkCommandBuffer command_buffer);
+  RenderContext BeginDraw();
+  void Present(RenderContext& context);
 
   void WaitDeviceIdle();
 

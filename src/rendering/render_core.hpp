@@ -19,11 +19,14 @@ struct UniformBufferObject {
   glm::mat4 proj;
 };
 
+struct RenderData {
+  glm::mat4 camera_view;
+  glm::mat4 camera_projection;
+};
+
 struct RenderContext {
   VkCommandBuffer command_buffer;
   VkPipelineLayout pipeline_layout;
-  
-  std::shared_ptr<UniformBuffer> uniform_buffer;
 
   VkDescriptorSet descriptor_set;
   VkFramebuffer swap_chain_framebuffer;
@@ -33,6 +36,9 @@ struct RenderContext {
 
   VkFence in_flight_fence;
   VkFence images_in_flight;
+
+  RenderData render_data;
+  std::shared_ptr<UniformBuffer> uniform_buffer;
 };
 
 class RenderCore {
@@ -86,7 +92,7 @@ class RenderCore {
   std::shared_ptr<UniformBuffer> CreateUniformBuffer(const VkDeviceSize size);
 
   RenderContext BeginDraw();
-  void Present(RenderContext& context);
+  void Present(RenderContext &context);
 
   void WaitDeviceIdle();
 

@@ -84,27 +84,24 @@ void LoadMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, const st
 
 void LoadNode(std::vector<std::shared_ptr<scene::Node>> &root_nodes, const std::shared_ptr<scene::Node> &parent, const tinygltf::Node &node,
               const tinygltf::Model &model) {
-  auto new_node = std::make_shared<scene::Node>();
-  new_node->parent = parent;
-  new_node->name_ = node.name;
+  auto new_node = parent->CreateChildNode(node.name);
 
   // Generate local node matrix
   auto translation = glm::vec3(0.0F);
   if (node.translation.size() == 3) {
     translation = glm::make_vec3(node.translation.data());
-    new_node->translation = translation;
+    new_node->transform_.position = translation;
   }
 
-  glm::mat4 rotation = glm::mat4(1.0F);
   if (node.rotation.size() == 4) {
     glm::quat q = glm::make_quat(node.rotation.data());
-    new_node->rotation = glm::mat4(q);
+    new_node->transform_.rotation = q;
   }
 
   auto scale = glm::vec3(1.0F);
   if (node.scale.size() == 3) {
     scale = glm::make_vec3(node.scale.data());
-    new_node->scale = scale;
+    new_node->transform_.scale = scale;
   }
 
   for (const auto &child : node.children) {

@@ -35,18 +35,28 @@ void Mesh::InitializeVulkan(RenderCore &renderer) {
   }
 }
 
-void Mesh::Render(rendering::RenderContext& context) {
+void Mesh::Render(rendering::RenderContext &context) {
   VkBuffer vertex_buffers[] = {vertex_buffer_->buffer};
   VkDeviceSize offsets[] = {0};
 
   vkCmdBindVertexBuffers(context.command_buffer, 0, 1, vertex_buffers, offsets);
   vkCmdBindIndexBuffer(context.command_buffer, index_buffer_->buffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, context.pipeline_layout, 0, 1, &context.descriptor_set, 0, nullptr);
+  vkCmdBindDescriptorSets(context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, context.pipeline_layout, 0, 1, &context.descriptor_set,
+                          0, nullptr);
 
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {
     vkCmdDrawIndexed(context.command_buffer, static_cast<uint32_t>(primitive.index_count_), 1, 0, 0, 0);
+  }
+
+  // TODO: make it for each mesh
+  {
+    rendering::UniformBufferObject data{};
+    data.model = glm::mat4(1.0F);
+    data.view = context.render_data.camera_view;
+    data.proj = context.render_data.camera_projection;
+    context.uniform_buffer->Update(&data);
   }
 }
 

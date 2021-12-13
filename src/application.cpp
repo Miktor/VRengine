@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "scene/node.hpp"
+
 namespace vre {
 
 namespace {
@@ -25,18 +27,24 @@ bool Application::ProcessInput(GLFWwindow *window, int key, int /*scancode*/, in
   }
 
   if (action == GLFW_PRESS) {
+    constexpr float kStep = 0.1F;
+    glm::vec3 transform(0.0F);
     switch (key) {
       case GLFW_KEY_W:
+        transform += glm::vec3(0, 1.F, 0);
         break;
       case GLFW_KEY_A:
+        transform += glm::vec3(-1.F, 0, 0);
         break;
       case GLFW_KEY_S:
+        transform += glm::vec3(0, -1.F, 0);
         break;
       case GLFW_KEY_D:
-        break;
-      default:
+        transform += glm::vec3(1.F, 0, 0);
         break;
     }
+
+    main_scene_.main_camera_node_->transform_.position += transform * kStep;
   }
 
   return true;
@@ -47,6 +55,7 @@ void Application::Run() {
   render_core_.InitVulkan(window_);
 
   main_scene_.LoadFromFile();
+  main_scene_.CreateCamera();
   main_scene_.InitializeVulkan(render_core_);
 
   MainLoop();

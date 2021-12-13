@@ -29,6 +29,8 @@ find_package(spdlog REQUIRED)
 
 include_directories(${GLM_INCLUDE_DIR})
 
+# set(CMAKE_CXX_CLANG_TIDY /usr/local/opt/llvm/bin/clang-tidy -fix)
+
 file(GLOB_RECURSE SOURCES
      "src/*.h"
      "src/*.cpp"

@@ -562,15 +562,6 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
   }
   descriptor_pool_ = CreateDescriptorPool(swap_chain_images_.size(), device_);
   descriptor_sets_ = CreateDescriptorSets(swap_chain_images_.size(), device_, descriptor_pool_, descriptor_set_layout_, uniform_buffers_);
-
-  for (auto &ubo : uniform_buffers_) {
-    UniformBufferObject data{};
-    data.model = glm::mat4(1.0F);
-    data.view = glm::lookAt(glm::vec3(0.0F, 3.0F, 5.0F), glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F));
-    data.proj = glm::perspective(glm::radians(60.0F), 1.0F, 0.01F, 100.0F);
-    data.proj[1][1] *= -1;
-    ubo->Update(&data);
-  }
 }
 
 void RenderCore::CleanupSwapChain() {

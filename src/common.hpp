@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <memory>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -14,8 +15,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
+#include <spdlog/spdlog.h>
 
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_core.h>

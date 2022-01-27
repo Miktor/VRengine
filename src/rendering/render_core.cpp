@@ -780,7 +780,7 @@ RenderContext RenderCore::BeginDraw() {
 
   context.command_buffer = StartCommandBuffer(command_buffers_[next_image_index_], swap_chain_framebuffers_[next_image_index_],
                                               swap_chain_extent_, *pipeline_, render_pass_);
-  context.pipeline_layout = pipeline_->GetLayoput();
+  context.pipeline_layout = pipeline_->GetLayout();
   context.uniform_buffer = uniform_buffers_[next_image_index_];
   context.descriptor_set = descriptor_sets_[next_image_index_];
   context.swap_chain_framebuffer = swap_chain_framebuffers_[next_image_index_];

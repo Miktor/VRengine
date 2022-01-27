@@ -9,7 +9,7 @@ class Pipeline {
   Pipeline(VkDevice device) : device_(device) {}
 
   VkPipeline GetPipeline() { return graphics_pipeline_; }
-  VkPipelineLayout GetLayoput() { return pipeline_layout_; }
+  VkPipelineLayout GetLayout() { return pipeline_layout_; }
 
  private:
   VkDevice device_;

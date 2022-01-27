@@ -67,3 +67,8 @@ Diagnostics:
       readability-identifier-naming.ConstexprVariablePrefix: k
       readability-identifier-naming.MemberConstantCase: CamelCase
       readability-identifier-naming.MemberConstantPrefix: k
+
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes

@@ -9,6 +9,7 @@
 #include "buffers.hpp"
 #include "common.hpp"
 #include "platform/platform.hpp"
+#include "rendering/image.hpp"
 #include "shader.hpp"
 
 namespace vre::rendering {
@@ -279,9 +280,7 @@ bool IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 VkSurfaceKHR CreateSurface(VkInstance instance, GLFWwindow *window) {
   VkSurfaceKHR surface;
 
-  if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create window surface!");
-  }
+  CHECK_VK_SUCCESS(glfwCreateWindowSurface(instance, window, nullptr, &surface));
 
   return surface;
 }
@@ -423,32 +422,6 @@ std::vector<VkCommandBuffer> AllocateCommandBuffers(uint8_t count, VkDevice devi
   return command_buffers;
 }
 
-VkCommandBuffer StartCommandBuffer(VkCommandBuffer command_buffer, VkFramebuffer frame_buffer, const VkExtent2D &swap_chain_extent,
-                                   Pipeline pipeline, VkRenderPass render_pass) {
-  VkCommandBufferBeginInfo begin_info{};
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-  if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
-    throw std::runtime_error("failed to begin recording command buffer!");
-  }
-
-  VkRenderPassBeginInfo render_pass_info{};
-  render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  render_pass_info.renderPass = render_pass;
-  render_pass_info.framebuffer = frame_buffer;
-  render_pass_info.renderArea.offset = {0, 0};
-  render_pass_info.renderArea.extent = swap_chain_extent;
-
-  VkClearValue clear_color = {0.0F, 0.0F, 0.0F, 1.0F};
-  render_pass_info.clearValueCount = 1;
-  render_pass_info.pClearValues = &clear_color;
-
-  vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetPipeline());
-
-  return command_buffer;
-}
-
 VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice device) {
   VkDescriptorSetLayoutBinding ubo_layout_binding{};
   ubo_layout_binding.binding = 0;
@@ -526,6 +499,24 @@ std::vector<VkDescriptorSet> CreateDescriptorSets(const uint32_t count, VkDevice
   return descriptor_sets;
 }
 
+RenderPassInfo CreateDefaultRenderPass(ImageViewPtr image_view) {
+  RenderPassInfo info;
+  info.color_attachments.push_back(image_view);
+  info.clear_attachments = 1u << 0;
+  info.store_attachments = 1u << 0;
+
+  info.clear_color.push_back({.0f, .0f, .0f});
+
+  RenderPassInfo::Subpass subpass_info{};
+  subpass_info.color_attachments.reserve(info.color_attachments.size());
+  for (unsigned i = 0; i < info.color_attachments.size(); i++) {
+    subpass_info.color_attachments.push_back(i);
+  }
+  info.subpasses.push_back(std::move(subpass_info));
+
+  return info;
+}
+
 }  // namespace
 
 void RenderCore::InitVulkan(GLFWwindow *window) {
@@ -541,20 +532,16 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
 
   CreateSwapChain(window, indices);
   CreateImageViews();
-  CreateRenderPass();
+
   descriptor_set_layout_ = CreateDescriptorSetLayout(device_);
 
   auto material = Material(Shader(device, Shader::kFragment, "assets/shaders/shader.frag"),
                            Shader(device, Shader::kVertex, "assets/shaders/shader.vert"));
 
-  pipeline_ = std::make_shared<Pipeline>(device_);
-  pipeline_->CreateGraphicsPipeline(render_pass_, material, swap_chain_extent_, VK_POLYGON_MODE_FILL);
-
-  CreateFramebuffers();
   command_pool_ = CreateCommandPool(device, indices);
 
   CreateSyncObjects();
-  command_buffers_ = AllocateCommandBuffers(swap_chain_framebuffers_.size(), device, command_pool_);
+  command_buffers_ = AllocateCommandBuffers(backbuffers_.size(), device, command_pool_);
 
   uniform_buffers_.reserve(swap_chain_images_.size());
   for (size_t i = 0; i < swap_chain_images_.size(); i++) {
@@ -565,17 +552,7 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
 }
 
 void RenderCore::CleanupSwapChain() {
-  for (auto *framebuffer : swap_chain_framebuffers_) {
-    vkDestroyFramebuffer(device_, framebuffer, nullptr);
-  }
-
   vkFreeCommandBuffers(device_, command_pool_, static_cast<uint32_t>(command_buffers_.size()), command_buffers_.data());
-
-  vkDestroyRenderPass(device_, render_pass_, nullptr);
-
-  for (auto *image_view : swap_chain_image_views_) {
-    vkDestroyImageView(device_, image_view, nullptr);
-  }
 
   vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 }
@@ -656,7 +633,9 @@ void RenderCore::CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &i
 }
 
 void RenderCore::CreateImageViews() {
-  swap_chain_image_views_.resize(swap_chain_images_.size());
+  const auto image_create_info =
+      ImageCreateInfo::RenderTarget(swap_chain_extent_.width, swap_chain_extent_.height, swap_chain_image_format_);
+  backbuffers_.reserve(swap_chain_images_.size());
 
   for (size_t i = 0; i < swap_chain_images_.size(); i++) {
     VkImageViewCreateInfo create_info{};
@@ -674,73 +653,16 @@ void RenderCore::CreateImageViews() {
     create_info.subresourceRange.baseArrayLayer = 0;
     create_info.subresourceRange.layerCount = 1;
 
-    if (vkCreateImageView(device_, &create_info, nullptr, &swap_chain_image_views_[i]) != VK_SUCCESS) {
+    VkImageView image_view;
+    if (vkCreateImageView(device_, &create_info, nullptr, &image_view) != VK_SUCCESS) {
       throw std::runtime_error("failed to create image views!");
     }
+
+    backbuffers_.emplace_back(device_, swap_chain_images_[i], image_view, image_create_info, VK_IMAGE_VIEW_TYPE_2D);
+    backbuffers_.back().SetSwapchainLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   }
-}
 
-void RenderCore::CreateRenderPass() {
-  VkAttachmentDescription color_attachment{};
-  color_attachment.format = swap_chain_image_format_;
-  color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-  VkAttachmentReference color_attachment_ref{};
-  color_attachment_ref.attachment = 0;
-  color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-  VkSubpassDescription subpass{};
-  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.colorAttachmentCount = 1;
-  subpass.pColorAttachments = &color_attachment_ref;
-
-  VkSubpassDependency dependency{};
-  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-  dependency.dstSubpass = 0;
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  dependency.srcAccessMask = 0;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-  VkRenderPassCreateInfo render_pass_info{};
-  render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  render_pass_info.attachmentCount = 1;
-  render_pass_info.pAttachments = &color_attachment;
-  render_pass_info.subpassCount = 1;
-  render_pass_info.pSubpasses = &subpass;
-  render_pass_info.dependencyCount = 1;
-  render_pass_info.pDependencies = &dependency;
-
-  if (vkCreateRenderPass(device_, &render_pass_info, nullptr, &render_pass_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create render pass!");
-  }
-}
-
-void RenderCore::CreateFramebuffers() {
-  swap_chain_framebuffers_.resize(swap_chain_image_views_.size());
-
-  for (size_t i = 0; i < swap_chain_image_views_.size(); i++) {
-    VkImageView attachments[] = {swap_chain_image_views_[i]};
-
-    VkFramebufferCreateInfo framebuffer_info{};
-    framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebuffer_info.renderPass = render_pass_;
-    framebuffer_info.attachmentCount = 1;
-    framebuffer_info.pAttachments = attachments;
-    framebuffer_info.width = swap_chain_extent_.width;
-    framebuffer_info.height = swap_chain_extent_.height;
-    framebuffer_info.layers = 1;
-
-    if (vkCreateFramebuffer(device_, &framebuffer_info, nullptr, &swap_chain_framebuffers_[i]) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create framebuffer!");
-    }
-  }
+  framebuffers_.resize(backbuffers_.size());
 }
 
 void RenderCore::CreateSyncObjects() {
@@ -776,26 +698,51 @@ RenderContext RenderCore::BeginDraw() {
 
   images_in_flight_[next_image_index_] = in_flight_fences_[current_frame_];
 
-  RenderContext context;
+  RenderContext context{CommandBuffer(this, command_buffers_[next_image_index_])};
 
-  context.command_buffer = StartCommandBuffer(command_buffers_[next_image_index_], swap_chain_framebuffers_[next_image_index_],
-                                              swap_chain_extent_, *pipeline_, render_pass_);
-  context.pipeline_layout = pipeline_->GetLayout();
   context.uniform_buffer = uniform_buffers_[next_image_index_];
   context.descriptor_set = descriptor_sets_[next_image_index_];
-  context.swap_chain_framebuffer = swap_chain_framebuffers_[next_image_index_];
   context.image_available_semaphore = image_available_semaphores_[current_frame_];
   context.render_finished_semaphore = render_finished_semaphores_[current_frame_];
   context.in_flight_fence = in_flight_fences_[current_frame_];
   context.images_in_flight = images_in_flight_[next_image_index_];
 
+  context.command_buffer.Start();
+
+  BeginRenderInfo begin_render_info{};
+  begin_render_info.render_pass_info = CreateDefaultRenderPass(backbuffers_[next_image_index_].GetView());
+
+  if (render_pass_ == nullptr) {
+    render_pass_ = std::make_shared<RenderPass>(device_, begin_render_info.render_pass_info);
+  }
+  begin_render_info.render_pass = render_pass_;
+
+  if (framebuffers_[next_image_index_] == nullptr) {
+    framebuffers_[next_image_index_] =
+        std::make_shared<Framebuffer>(device_, *begin_render_info.render_pass, begin_render_info.render_pass_info);
+  }
+  begin_render_info.framebuffer = framebuffers_[next_image_index_];
+
+  if (pipeline_ == nullptr) {
+    pipeline_ = std::make_shared<Pipeline>(device_);
+    auto material = Material(Shader(device_, Shader::kFragment, "assets/shaders/shader.frag"),
+                             Shader(device_, Shader::kVertex, "assets/shaders/shader.vert"));
+    pipeline_->CreateGraphicsPipeline(render_pass_->GetRenderPass(), material, swap_chain_extent_, VK_POLYGON_MODE_FILL);
+  }
+  begin_render_info.pipeline = pipeline_;
+  context.pipeline = pipeline_;
+  
+  context.command_buffer.BeginRenderPass(begin_render_info);
+
   return context;
 }
 
 void RenderCore::Present(RenderContext &context) {
-  vkCmdEndRenderPass(context.command_buffer);
+  const auto cmd_buffer = context.command_buffer.GetBuffer();
 
-  if (vkEndCommandBuffer(context.command_buffer) != VK_SUCCESS) {
+  vkCmdEndRenderPass(cmd_buffer);
+
+  if (vkEndCommandBuffer(cmd_buffer) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
   }
 
@@ -809,7 +756,7 @@ void RenderCore::Present(RenderContext &context) {
   submit_info.pWaitDstStageMask = wait_stages;
 
   submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &context.command_buffer;
+  submit_info.pCommandBuffers = &cmd_buffer;
 
   VkSemaphore signal_semaphores[] = {context.render_finished_semaphore};
   submit_info.signalSemaphoreCount = 1;

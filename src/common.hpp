@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <list>
 #include <memory>
 #include <optional>
 #include <set>
@@ -24,3 +25,5 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+#include "helpers.hpp"

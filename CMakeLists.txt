@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.7 FATAL_ERROR)
+
+set(CMAKE_ENABLE_EXPORTS on)
+
 project(vrengine VERSION 0.1.0)
 
 enable_language(CXX)
@@ -14,6 +17,8 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 ELSEIF(APPLE)
     add_compile_options ( "-Wno-nullability-extension" "-Wno-missing-field-initializers")  ## "-Wall" "-Wextra" "-Wpedantic" "-Werror"
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_MACOS_MVK")
+    add_compile_options(-Wno-macro-redefined)
+    set(CMAKE_EXE_LINKER_FLAGS "-Wl,-export_dynamic")
 ENDIF()
 
 
@@ -66,3 +71,5 @@ add_custom_target(
         -i
         ${ALL_SOURCE_FILES}
 )
+
+add_compile_definitions(VK_DEBUG)

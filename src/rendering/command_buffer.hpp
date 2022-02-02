@@ -1,8 +1,19 @@
+#include <memory>
 #include "common.hpp"
+
+#include "rendering/render_pass.hpp"
+#include "rendering/pipeline.hpp"
 
 namespace vre::rendering {
 
 class RenderCore;
+
+struct BeginRenderInfo {
+  RenderPassInfo render_pass_info;
+  std::shared_ptr<RenderPass> render_pass;
+  std::shared_ptr<Framebuffer> framebuffer;
+  std::shared_ptr<Pipeline> pipeline;
+};
 
 class CommandBuffer {
  public:
@@ -11,30 +22,12 @@ class CommandBuffer {
   CommandBuffer(CommandBuffer &) = delete;
   CommandBuffer(CommandBuffer &&) = default;
 
-  void Start() {
-    VkCommandBufferBeginInfo begin_info{};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  // TODO: delete
+  VkCommandBuffer GetBuffer() { return command_buffer_; }
 
-    if (vkBeginCommandBuffer(command_buffer_, &begin_info) != VK_SUCCESS) {
-      throw std::runtime_error("failed to begin recording command buffer!");
-    }
-  }
+  void Start();
 
-  // void BeginRenderPass(const RenderPassInfo &info) {
-  //   VkRenderPassBeginInfo render_pass_info{};
-  //   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  //   render_pass_info.renderPass = render_pass;
-  //   render_pass_info.framebuffer = frame_buffer;
-  //   render_pass_info.renderArea.offset = {0, 0};
-  //   render_pass_info.renderArea.extent = swap_chain_extent;
-
-  //   VkClearValue clear_color = {0.0F, 0.0F, 0.0F, 1.0F};
-  //   render_pass_info.clearValueCount = 1;
-  //   render_pass_info.pClearValues = &clear_color;
-
-  //   vkCmdBeginRenderPass(command_buffer_, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-  //   vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetPipeline());
-  // }
+  void BeginRenderPass(const BeginRenderInfo &info);
 
  private:
   const RenderCore *core_;

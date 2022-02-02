@@ -39,15 +39,15 @@ void Mesh::Render(rendering::RenderContext &context) {
   VkBuffer vertex_buffers[] = {vertex_buffer_->buffer};
   VkDeviceSize offsets[] = {0};
 
-  vkCmdBindVertexBuffers(context.command_buffer, 0, 1, vertex_buffers, offsets);
-  vkCmdBindIndexBuffer(context.command_buffer, index_buffer_->buffer, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindVertexBuffers(context.command_buffer.GetBuffer(), 0, 1, vertex_buffers, offsets);
+  vkCmdBindIndexBuffer(context.command_buffer.GetBuffer(), index_buffer_->buffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, context.pipeline_layout, 0, 1, &context.descriptor_set,
-                          0, nullptr);
+  vkCmdBindDescriptorSets(context.command_buffer.GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, context.pipeline->GetLayout(), 0, 1,
+                          &context.descriptor_set, 0, nullptr);
 
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {
-    vkCmdDrawIndexed(context.command_buffer, static_cast<uint32_t>(primitive.index_count_), 1, 0, 0, 0);
+    vkCmdDrawIndexed(context.command_buffer.GetBuffer(), static_cast<uint32_t>(primitive.index_count_), 1, 0, 0, 0);
   }
 
   // TODO: make it for each mesh

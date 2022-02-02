@@ -55,7 +55,7 @@ Checks: >
 
 WarningsAsErrors: ''
 
-HeaderFilterRegex: '.*\/vrengine\/src\/.*'
+HeaderFilterRegex: '\/VRengine\/src\/.*'
 
 
 CheckOptions:

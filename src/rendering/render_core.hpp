@@ -1,11 +1,10 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
 #include <memory>
-#include <vector>
-
 #include "common.hpp"
 #include "rendering/buffers.hpp"
+#include "rendering/command_buffer.hpp"
+#include "rendering/image.hpp"
 #include "rendering/pipeline.hpp"
 #include "rendering/render_pass.hpp"
 
@@ -25,8 +24,8 @@ struct RenderData {
 };
 
 struct RenderContext {
-  VkCommandBuffer command_buffer;
-  VkPipelineLayout pipeline_layout;
+  CommandBuffer command_buffer;
+  std::shared_ptr<Pipeline> pipeline;
 
   VkDescriptorSet descriptor_set;
   VkFramebuffer swap_chain_framebuffer;
@@ -57,10 +56,10 @@ class RenderCore {
   std::vector<VkImage> swap_chain_images_;
   VkFormat swap_chain_image_format_ = VkFormat::VK_FORMAT_UNDEFINED;
   VkExtent2D swap_chain_extent_{};
-  std::vector<VkImageView> swap_chain_image_views_;
-  std::vector<VkFramebuffer> swap_chain_framebuffers_;
 
-  VkRenderPass render_pass_ = VK_NULL_HANDLE;
+  std::vector<Image> backbuffers_;
+  std::vector<std::shared_ptr<Framebuffer>> framebuffers_;
+  std::shared_ptr<RenderPass> render_pass_;
   std::shared_ptr<Pipeline> pipeline_;
 
   VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
@@ -99,8 +98,6 @@ class RenderCore {
  private:
   void CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &indices);
   void CreateImageViews();
-  void CreateRenderPass();
-  void CreateFramebuffers();
   void CreateSyncObjects();
 };
 

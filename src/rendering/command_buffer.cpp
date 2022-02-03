@@ -56,6 +56,10 @@ void CommandBuffer::BeginRenderPass(const BeginRenderInfo &info) {
   vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, info.pipeline->GetPipeline());
 }
 
+void CommandBuffer::SetViewport(const VkViewport &viewport) { vkCmdSetViewport(command_buffer_, 0, 1, &viewport); }
+
+void CommandBuffer::SetScissors(const VkRect2D &scissor) { vkCmdSetScissor(command_buffer_, 0, 1, &scissor); }
+
 void CommandBuffer::BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset, VkDeviceSize stride,
                                       VkVertexInputRate step_rate) {
   const auto vk_buffer = buffer.GetBuffer();
@@ -66,13 +70,15 @@ void CommandBuffer::BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, V
   vkCmdBindIndexBuffer(command_buffer_, buffer.GetBuffer(), offset, index_type);
 }
 
-void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer) {
-  
-}
+void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer) {}
 
 void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset,
                                 uint32_t first_instance) {
   vkCmdDrawIndexed(command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
+}
+
+VkPipeline CommandBuffer::BuildGraphicsPipeline() {
+  return VkPipeline{0};
 }
 
 }  // namespace vre::rendering

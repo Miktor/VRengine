@@ -727,12 +727,26 @@ RenderContext RenderCore::BeginDraw() {
     pipeline_ = std::make_shared<Pipeline>(device_);
     auto material = Material(Shader(device_, Shader::kFragment, "assets/shaders/shader.frag"),
                              Shader(device_, Shader::kVertex, "assets/shaders/shader.vert"));
-    pipeline_->CreateGraphicsPipeline(render_pass_->GetRenderPass(), material, swap_chain_extent_, VK_POLYGON_MODE_FILL);
+    pipeline_->CreateGraphicsPipeline(render_pass_->GetRenderPass(), material, VK_POLYGON_MODE_FILL);
   }
   begin_render_info.pipeline = pipeline_;
   context.pipeline = pipeline_;
-  
+
   context.command_buffer.BeginRenderPass(begin_render_info);
+
+  VkViewport viewport{};
+  viewport.x = 0.0F;
+  viewport.y = 0.0F;
+  viewport.width = static_cast<float>(swap_chain_extent_.width);
+  viewport.height = static_cast<float>(swap_chain_extent_.height);
+  viewport.minDepth = 0.0F;
+  viewport.maxDepth = 1.0F;
+  context.command_buffer.SetViewport(viewport);
+
+  VkRect2D scissor{};
+  scissor.offset = {0, 0};
+  scissor.extent = swap_chain_extent_;
+  context.command_buffer.SetScissors(scissor);
 
   return context;
 }

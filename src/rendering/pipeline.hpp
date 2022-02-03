@@ -18,7 +18,7 @@ class Pipeline {
   VkPipeline graphics_pipeline_;
 
  public:
-  void CreateGraphicsPipeline(VkRenderPass render_pass, Material &material, const VkExtent2D &swap_chain_extent, VkPolygonMode mode);
+  void CreateGraphicsPipeline(VkRenderPass render_pass, Material &material, VkPolygonMode mode);
 };
 
 }  // namespace vre::rendering

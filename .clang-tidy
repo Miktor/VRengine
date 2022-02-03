@@ -9,6 +9,7 @@ Checks: >
   readability-*,
   cppcoreguidelines-*,
   hicpp-*,
+  -llvm-header-guard,
   -*-qualified-auto,
   -openmp-*,
   -objc-*,
@@ -55,7 +56,7 @@ Checks: >
 
 WarningsAsErrors: ''
 
-HeaderFilterRegex: '\/VRengine\/src\/.*'
+HeaderFilterRegex: 'src/.*'
 
 
 CheckOptions:

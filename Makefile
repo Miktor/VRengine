@@ -10,17 +10,13 @@ clean:
 
 .PHONY: clang-tidy
 clang-tidy: 
-	@./tools/run-clang-tidy.py -p "$(BUILD_DIR)" \
-		-clang-tidy-binary $(CLANG_TIDY_BINARY) \
-		-j$(NPROCS)
+	@cmake -DCMAKE_CXX_CLANG_TIDY="$(CLANG_TIDY_BINARY)" -B "$(BUILD_DIR)" ./ && \
+		make -C "$(BUILD_DIR)" -j$(NPROCS)
 
 .PHONY: clang-tidy-fix
 clang-tidy-fix: 
-	@./tools/run-clang-tidy.py -p "$(BUILD_DIR)" \
-		-clang-tidy-binary $(CLANG_TIDY_BINARY) \
-		-clang-apply-replacements-binary $(CLANG_APPLY_REPLACEMENTS_BINARY) \
-		-j$(NPROCS) -fix -format
-
+	@cmake -DCMAKE_CXX_CLANG_TIDY="$(CLANG_TIDY_BINARY) --fix" -B "$(BUILD_DIR)" ./ && \
+		make -C "$(BUILD_DIR)" -j$(NPROCS)
 
 .PHONY: iwyu
 iwyu: 

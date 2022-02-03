@@ -36,7 +36,6 @@ struct RenderPassInfo {
   VkRect2D render_area = {{0, 0}, {UINT32_MAX, UINT32_MAX}};
 
   std::vector<VkClearColorValue> clear_color;
-  VkClearDepthStencilValue clear_depth_stencil{1.0f, 0};
 
   enum class DepthStencil {
     None,

@@ -1,5 +1,5 @@
 #include "render_pass.hpp"
-#include <_types/_uint32_t.h>
+
 #include <vulkan/vulkan_core.h>
 
 namespace vre::rendering {
@@ -9,7 +9,7 @@ namespace {
 void compute_dimensions(const RenderPassInfo &info, uint32_t &width, uint32_t &height) {
   width = UINT32_MAX;
   height = UINT32_MAX;
-  VR_ASSERT(info.num_color_attachments || info.depth_stencil);
+  VR_ASSERT(!info.color_attachments.empty());
 
   for (const auto &attachment : info.color_attachments) {
     width = std::min(width, attachment->GetImage().GetWidth());

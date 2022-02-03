@@ -1,4 +1,5 @@
 #include "command_buffer.hpp"
+#include <vulkan/vulkan_core.h>
 
 namespace vre::rendering {
 
@@ -53,6 +54,25 @@ void CommandBuffer::BeginRenderPass(const BeginRenderInfo &info) {
 
   vkCmdBeginRenderPass(command_buffer_, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
   vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, info.pipeline->GetPipeline());
+}
+
+void CommandBuffer::BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset, VkDeviceSize stride,
+                                      VkVertexInputRate step_rate) {
+  const auto vk_buffer = buffer.GetBuffer();
+  vkCmdBindVertexBuffers(command_buffer_, binding, 1, &vk_buffer, &offset);
+}
+
+void CommandBuffer::BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, VkIndexType index_type) {
+  vkCmdBindIndexBuffer(command_buffer_, buffer.GetBuffer(), offset, index_type);
+}
+
+void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer) {
+  
+}
+
+void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset,
+                                uint32_t first_instance) {
+  vkCmdDrawIndexed(command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
 }  // namespace vre::rendering

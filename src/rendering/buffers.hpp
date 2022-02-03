@@ -22,6 +22,9 @@ class Buffer {
     vkUnmapMemory(device, buffer_memory);
   }
 
+  VkDeviceSize GetSize() const { return size; }
+  VkBuffer GetBuffer() const { return buffer; }
+
   VkDevice device;
   VkDeviceSize size;
   VkBuffer buffer;

@@ -1,8 +1,9 @@
 #include <memory>
 #include "common.hpp"
 
-#include "rendering/render_pass.hpp"
+#include "rendering/buffers.hpp"
 #include "rendering/pipeline.hpp"
+#include "rendering/render_pass.hpp"
 
 namespace vre::rendering {
 
@@ -28,6 +29,13 @@ class CommandBuffer {
   void Start();
 
   void BeginRenderPass(const BeginRenderInfo &info);
+
+  void BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset, VkDeviceSize stride, VkVertexInputRate step_rate);
+  void BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, VkIndexType index_type);
+
+  void BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer);
+
+  void DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset, uint32_t first_instance);
 
  private:
   const RenderCore *core_;

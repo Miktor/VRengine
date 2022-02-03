@@ -56,18 +56,6 @@ void Pipeline::CreateGraphicsPipeline(VkRenderPass render_pass, Material &materi
   color_blending.blendConstants[2] = 0.0F;
   color_blending.blendConstants[3] = 0.0F;
 
-  const auto &set_layouts = material.GetDescriptorSetLayout(device_);
-  VkPipelineLayoutCreateInfo pipeline_layout_info{};
-  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = 1;
-  pipeline_layout_info.pSetLayouts = &set_layouts;
-
-  if (vkCreatePipelineLayout(device_, &pipeline_layout_info, nullptr, &pipeline_layout_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create pipeline layout!");
-  }
-
-  auto shader_stages = material.GetShaderStages();
-
   auto [binding_descriptions, attribute_descriptions] = material.GetInputBindings();
 
   VkPipelineVertexInputStateCreateInfo vertex_input_info{};
@@ -77,6 +65,9 @@ void Pipeline::CreateGraphicsPipeline(VkRenderPass render_pass, Material &materi
   vertex_input_info.pVertexBindingDescriptions = binding_descriptions.data();
   vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
 
+  auto shader_stages = material.GetShaderStages();
+  pipeline_layout_ = material.GetPipelineLayout();
+  
   VkGraphicsPipelineCreateInfo pipeline_info{};
   pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
   pipeline_info.stageCount = shader_stages.size();

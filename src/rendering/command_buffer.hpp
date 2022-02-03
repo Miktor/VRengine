@@ -31,7 +31,7 @@ class CommandBuffer {
   void BeginRenderPass(const BeginRenderInfo &info);
 
   void SetViewport(const VkViewport &viewport);
-  void SetScissors(const VkRect2D& scissor);
+  void SetScissors(const VkRect2D &scissor);
 
   void BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset, VkDeviceSize stride, VkVertexInputRate step_rate);
   void BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, VkIndexType index_type);

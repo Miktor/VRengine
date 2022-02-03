@@ -53,16 +53,23 @@ class Shader {
 
 class Material {
  public:
-  Material(Shader &&fragment, Shader &&vertex) : fragment_(std::move(fragment)), vertex_(std::move(vertex)) {}
+  Material(VkDevice device,Shader &&fragment, Shader &&vertex);
 
   std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const;
   std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>> GetInputBindings() const;
-  VkDescriptorSetLayout GetDescriptorSetLayout(VkDevice device);
+
+  VkPipelineLayout GetPipelineLayout() const;
 
  private:
+  VkDevice device_;
+
   Shader fragment_;
   Shader vertex_;
   VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
+  VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
+
+ private:
+  VkDescriptorSetLayout GetDescriptorSetLayout();
 };
 
 }  // namespace vre::rendering

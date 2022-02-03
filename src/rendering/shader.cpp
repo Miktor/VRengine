@@ -123,6 +123,17 @@ std::vector<VkDescriptorSetLayoutBinding> GetLayoutBindings(const Shader &vertex
   return result;
 }
 
+VkPipelineLayout CreatePipelineLayout(VkDevice device, VkDescriptorSetLayout set_layout) {
+  VkPipelineLayoutCreateInfo pipeline_layout_info{};
+  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  pipeline_layout_info.setLayoutCount = 1;
+  pipeline_layout_info.pSetLayouts = &set_layout;
+
+  VkPipelineLayout pipeline_layout;
+  CHECK_VK_SUCCESS(vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout));
+  return pipeline_layout;
+}
+
 }  // namespace
 
 Shader::Shader(VkDevice device, Type type, const std::string &path) : device_(device), type_(type), path_(path) {
@@ -135,11 +146,14 @@ Shader::Shader(VkDevice device, Type type, const std::string &path) : device_(de
   create_info.codeSize = spirv.size() * sizeof(uint32_t);
   create_info.pCode = spirv.data();
 
-  if (vkCreateShaderModule(device_, &create_info, nullptr, &shader_module_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create shader module!");
-  }
+  CHECK_VK_SUCCESS(vkCreateShaderModule(device_, &create_info, nullptr, &shader_module_));
 
   reflection_data_ = GetReflectionData(std::move(spirv));
+}
+
+Material::Material(VkDevice device, Shader &&fragment, Shader &&vertex)
+    : device_(device), fragment_(std::move(fragment)), vertex_(std::move(vertex)) {
+  pipeline_layout_ = CreatePipelineLayout(device_, GetDescriptorSetLayout());
 }
 
 std::vector<VkPipelineShaderStageCreateInfo> Material::GetShaderStages() const {
@@ -163,7 +177,7 @@ std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInp
   return std::make_tuple(GetBindingDescription(vertex_), GetAttributeDescriptions(vertex_));
 }
 
-VkDescriptorSetLayout Material::GetDescriptorSetLayout(VkDevice device) {
+VkDescriptorSetLayout Material::GetDescriptorSetLayout() {
   if (descriptor_set_layout_ != VK_NULL_HANDLE) {
     return descriptor_set_layout_;
   }
@@ -174,11 +188,10 @@ VkDescriptorSetLayout Material::GetDescriptorSetLayout(VkDevice device) {
   layout_info.bindingCount = ubo_layout_bindings.size();
   layout_info.pBindings = ubo_layout_bindings.data();
 
-  if (vkCreateDescriptorSetLayout(device, &layout_info, nullptr, &descriptor_set_layout_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor set layout!");
-  }
-
+  CHECK_VK_SUCCESS(vkCreateDescriptorSetLayout(device_, &layout_info, nullptr, &descriptor_set_layout_));
   return descriptor_set_layout_;
 }
+
+VkPipelineLayout Material::GetPipelineLayout() const { return pipeline_layout_; }
 
 }  // namespace vre::rendering

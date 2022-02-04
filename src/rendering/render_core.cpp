@@ -720,15 +720,6 @@ RenderContext RenderCore::BeginDraw() {
   }
   begin_render_info.framebuffer = framebuffers_[next_image_index_];
 
-  if (pipeline_ == nullptr) {
-    pipeline_ = std::make_shared<Pipeline>(device_);
-    auto material = Material(device_, Shader(device_, Shader::kFragment, "assets/shaders/shader.frag"),
-                             Shader(device_, Shader::kVertex, "assets/shaders/shader.vert"));
-    pipeline_->CreateGraphicsPipeline(render_pass_->GetRenderPass(), material, VK_POLYGON_MODE_FILL);
-  }
-  begin_render_info.pipeline = pipeline_;
-  context.pipeline = pipeline_;
-
   context.command_buffer.BeginRenderPass(begin_render_info);
 
   VkViewport viewport{};

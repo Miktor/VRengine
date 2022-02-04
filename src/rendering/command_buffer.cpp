@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "helpers.hpp"
 #include "rendering/render_core.hpp"
 #include "rendering/shader.hpp"
 
@@ -57,7 +58,6 @@ void CommandBuffer::BeginRenderPass(const BeginRenderInfo &info) {
   render_pass_info.pClearValues = clear_values.data();
 
   vkCmdBeginRenderPass(command_buffer_, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, info.pipeline->GetPipeline());
 
   state_.render_pass = info.render_pass;
 }
@@ -78,10 +78,11 @@ void CommandBuffer::BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, V
 
 void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer) {}
 
-void CommandBuffer::SetMaterial(const Material &material) { state_.material = &material; }
+void CommandBuffer::BindMaterial(const Material &material) { state_.material = &material; }
 
 void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset,
                                 uint32_t first_instance) {
+  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, BuildGraphicsPipeline());
   vkCmdDrawIndexed(command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
@@ -164,12 +165,10 @@ VkPipeline CommandBuffer::BuildGraphicsPipeline() {
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 
-  VkPipeline graphics_pipeline_;
-  if (vkCreateGraphicsPipelines(core_->GetDevice(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline_) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create graphics pipeline!");
-  }
+  VkPipeline graphics_pipeline;
+  CHECK_VK_SUCCESS(vkCreateGraphicsPipelines(core_->GetDevice(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline));
 
-  return graphics_pipeline_;
+  return graphics_pipeline;
 }
 
 }  // namespace vre::rendering

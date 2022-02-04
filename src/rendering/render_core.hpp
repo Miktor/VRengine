@@ -28,8 +28,7 @@ struct RenderData {
 
 struct RenderContext {
   CommandBuffer command_buffer;
-  std::shared_ptr<Pipeline> pipeline;
-
+  
   VkDescriptorSet descriptor_set;
   VkFramebuffer swap_chain_framebuffer;
 

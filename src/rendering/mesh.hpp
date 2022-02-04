@@ -1,9 +1,11 @@
 #pragma once
 
+#include <memory>
 #include "common.hpp"
 
 #include "rendering/buffers.hpp"
 #include "rendering/render_core.hpp"
+#include "rendering/shader.hpp"
 
 namespace vre ::rendering {
 
@@ -32,6 +34,7 @@ class Mesh {
 
   std::shared_ptr<IndexBuffer> index_buffer_;
   std::shared_ptr<VertexBuffer> vertex_buffer_;
+  std::shared_ptr<Material> material_;
 };
 
 }  // namespace vre::rendering

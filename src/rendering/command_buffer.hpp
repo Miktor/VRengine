@@ -4,6 +4,7 @@
 #include "rendering/buffers.hpp"
 #include "rendering/pipeline.hpp"
 #include "rendering/render_pass.hpp"
+#include "rendering/shader.hpp"
 
 namespace vre::rendering {
 
@@ -14,6 +15,13 @@ struct BeginRenderInfo {
   std::shared_ptr<RenderPass> render_pass;
   std::shared_ptr<Framebuffer> framebuffer;
   std::shared_ptr<Pipeline> pipeline;
+};
+
+struct GraphicsState {
+  bool is_wireframe = false;
+
+  const Material *material = nullptr;
+  std::shared_ptr<RenderPass> render_pass;
 };
 
 class CommandBuffer {
@@ -38,11 +46,15 @@ class CommandBuffer {
 
   void BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer);
 
+  void SetMaterial(const Material &material);
+
   void DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset, uint32_t first_instance);
 
  private:
   const RenderCore *core_;
   VkCommandBuffer command_buffer_;
+
+  GraphicsState state_;
 
  private:
   VkPipeline BuildGraphicsPipeline();

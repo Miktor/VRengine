@@ -1,6 +1,9 @@
 #pragma once
 
 #include <memory>
+
+#include <vulkan/vulkan_core.h>
+
 #include "common.hpp"
 #include "rendering/buffers.hpp"
 #include "rendering/command_buffer.hpp"
@@ -82,6 +85,8 @@ class RenderCore {
 
  public:
   void InitVulkan(GLFWwindow *window);
+
+  VkDevice GetDevice() { return device_; }
 
   void Cleanup();
   void CleanupSwapChain();

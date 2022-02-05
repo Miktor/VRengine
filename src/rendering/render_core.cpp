@@ -27,7 +27,8 @@ constexpr int kMaxFramesInFlight = 2;
 
 const std::vector<const char *> kValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
-const std::vector<const char *> kDeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset"};
+const std::vector<const char *> kDeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                                                     "VK_KHR_portability_subset"};
 
 #ifdef NDEBUG
 constexpr bool kEnableValidationLayers = false;
@@ -98,8 +99,10 @@ spdlog::level::level_enum GetSpdLogLevel(VkDebugUtilsMessageSeverityFlagBitsEXT 
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                                              VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
-                                             const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data, void * /*pUserData*/) {
-  SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(), GetSpdLogLevel(message_severity), "validation layer: {}", p_callback_data->pMessage);
+                                             const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
+                                             void * /*pUserData*/) {
+  SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(), GetSpdLogLevel(message_severity), "validation layer: {}",
+                     p_callback_data->pMessage);
 
   return VK_FALSE;
 }
@@ -107,9 +110,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
 void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create_info) {
   create_info = {};
   create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-  create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+  create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+  create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
   create_info.pfnUserCallback = DebugCallback;
 }
@@ -156,9 +161,12 @@ VkInstance CreateInstance() {
   return instance;
 }
 
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *p_create_info,
-                                      const VkAllocationCallbacks *p_allocator, VkDebugUtilsMessengerEXT *p_debug_messenger) {
-  auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+                                      const VkDebugUtilsMessengerCreateInfoEXT *p_create_info,
+                                      const VkAllocationCallbacks *p_allocator,
+                                      VkDebugUtilsMessengerEXT *p_debug_messenger) {
+  auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+      vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
   if (func != nullptr) {
     return func(instance, p_create_info, p_allocator, p_debug_messenger);
   }
@@ -167,7 +175,8 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger,
                                    const VkAllocationCallbacks *p_allocator) {
-  auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+  auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+      vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
   if (func != nullptr) {
     func(instance, debug_messenger, p_allocator);
   }
@@ -257,7 +266,8 @@ SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurface
 
   if (present_mode_count != 0) {
     details.present_modes_.resize(present_mode_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, details.present_modes_.data());
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count,
+                                              details.present_modes_.data());
   }
 
   return details;
@@ -315,7 +325,8 @@ auto CreateLogicalDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
   QueueFamilyIndices indices = FindQueueFamilies(physical_device, surface);
 
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-  std::set<uint32_t> unique_queue_families = {indices.graphics_family_.value(), indices.present_family_.value()};
+  std::set<uint32_t> unique_queue_families = {indices.graphics_family_.value(),
+                                              indices.present_family_.value()};
 
   float queue_priority = 1.0F;
   for (uint32_t queue_family : unique_queue_families) {
@@ -357,7 +368,8 @@ auto CreateLogicalDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
 
 VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &available_formats) {
   for (const auto &available_format : available_formats) {
-    if (available_format.format == VK_FORMAT_B8G8R8A8_SRGB && available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+    if (available_format.format == VK_FORMAT_B8G8R8A8_SRGB &&
+        available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
       return available_format;
     }
   }
@@ -386,8 +398,10 @@ VkExtent2D ChooseSwapExtent(GLFWwindow *window, const VkSurfaceCapabilitiesKHR &
 
   VkExtent2D actual_extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-  actual_extent.width = std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-  actual_extent.height = std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+  actual_extent.width =
+      std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+  actual_extent.height = std::clamp(actual_extent.height, capabilities.minImageExtent.height,
+                                    capabilities.maxImageExtent.height);
 
   return actual_extent;
 }
@@ -406,7 +420,8 @@ VkCommandPool CreateCommandPool(VkDevice device, const QueueFamilyIndices &queue
   return command_pool;
 }
 
-std::vector<VkCommandBuffer> AllocateCommandBuffers(uint8_t count, VkDevice device, VkCommandPool command_pool) {
+std::vector<VkCommandBuffer> AllocateCommandBuffers(uint8_t count, VkDevice device,
+                                                    VkCommandPool command_pool) {
   std::vector<VkCommandBuffer> command_buffers(count);
 
   VkCommandBufferAllocateInfo alloc_info{};
@@ -462,9 +477,10 @@ VkDescriptorPool CreateDescriptorPool(const size_t count, VkDevice device) {
   return descriptor_pool;
 }
 
-std::vector<VkDescriptorSet> CreateDescriptorSets(const uint32_t count, VkDevice device, VkDescriptorPool descriptor_pool,
-                                                  VkDescriptorSetLayout descriptor_set_layout,
-                                                  const std::vector<std::shared_ptr<UniformBuffer>> &uniform_buffers) {
+std::vector<VkDescriptorSet> CreateDescriptorSets(
+    const uint32_t count, VkDevice device, VkDescriptorPool descriptor_pool,
+    VkDescriptorSetLayout descriptor_set_layout,
+    const std::vector<std::shared_ptr<UniformBuffer>> &uniform_buffers) {
   std::vector<VkDescriptorSetLayout> layouts(count, descriptor_set_layout);
   VkDescriptorSetAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -545,11 +561,13 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
     uniform_buffers_.push_back(CreateUniformBuffer(sizeof(UniformBufferObject)));
   }
   descriptor_pool_ = CreateDescriptorPool(swap_chain_images_.size(), device_);
-  descriptor_sets_ = CreateDescriptorSets(swap_chain_images_.size(), device_, descriptor_pool_, descriptor_set_layout_, uniform_buffers_);
+  descriptor_sets_ = CreateDescriptorSets(swap_chain_images_.size(), device_, descriptor_pool_,
+                                          descriptor_set_layout_, uniform_buffers_);
 }
 
 void RenderCore::CleanupSwapChain() {
-  vkFreeCommandBuffers(device_, command_pool_, static_cast<uint32_t>(command_buffers_.size()), command_buffers_.data());
+  vkFreeCommandBuffers(device_, command_pool_, static_cast<uint32_t>(command_buffers_.size()),
+                       command_buffers_.data());
 
   vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 }
@@ -585,7 +603,8 @@ void RenderCore::CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &i
   VkExtent2D extent = ChooseSwapExtent(window, swap_chain_support.capabilities_);
 
   uint32_t image_count = swap_chain_support.capabilities_.minImageCount + 1;
-  if (swap_chain_support.capabilities_.maxImageCount > 0 && image_count > swap_chain_support.capabilities_.maxImageCount) {
+  if (swap_chain_support.capabilities_.maxImageCount > 0 &&
+      image_count > swap_chain_support.capabilities_.maxImageCount) {
     image_count = swap_chain_support.capabilities_.maxImageCount;
   }
 
@@ -630,8 +649,8 @@ void RenderCore::CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &i
 }
 
 void RenderCore::CreateImageViews() {
-  const auto image_create_info =
-      ImageCreateInfo::RenderTarget(swap_chain_extent_.width, swap_chain_extent_.height, swap_chain_image_format_);
+  const auto image_create_info = ImageCreateInfo::RenderTarget(
+      swap_chain_extent_.width, swap_chain_extent_.height, swap_chain_image_format_);
   backbuffers_.reserve(swap_chain_images_.size());
 
   for (size_t i = 0; i < swap_chain_images_.size(); i++) {
@@ -655,7 +674,8 @@ void RenderCore::CreateImageViews() {
       throw std::runtime_error("failed to create image views!");
     }
 
-    backbuffers_.emplace_back(device_, swap_chain_images_[i], image_view, image_create_info, VK_IMAGE_VIEW_TYPE_2D);
+    backbuffers_.emplace_back(device_, swap_chain_images_[i], image_view, image_create_info,
+                              VK_IMAGE_VIEW_TYPE_2D);
     backbuffers_.back().SetSwapchainLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   }
 
@@ -687,7 +707,8 @@ void RenderCore::CreateSyncObjects() {
 RenderContext RenderCore::BeginDraw() {
   vkWaitForFences(device_, 1, &in_flight_fences_[current_frame_], VK_TRUE, UINT64_MAX);
 
-  vkAcquireNextImageKHR(device_, swap_chain_, UINT64_MAX, image_available_semaphores_[current_frame_], VK_NULL_HANDLE, &next_image_index_);
+  vkAcquireNextImageKHR(device_, swap_chain_, UINT64_MAX, image_available_semaphores_[current_frame_],
+                        VK_NULL_HANDLE, &next_image_index_);
 
   if (images_in_flight_[next_image_index_] != VK_NULL_HANDLE) {
     vkWaitForFences(device_, 1, &images_in_flight_[next_image_index_], VK_TRUE, UINT64_MAX);
@@ -698,7 +719,6 @@ RenderContext RenderCore::BeginDraw() {
   RenderContext context{CommandBuffer(this, command_buffers_[next_image_index_])};
 
   context.uniform_buffer = uniform_buffers_[next_image_index_];
-  context.descriptor_set = descriptor_sets_[next_image_index_];
   context.image_available_semaphore = image_available_semaphores_[current_frame_];
   context.render_finished_semaphore = render_finished_semaphores_[current_frame_];
   context.in_flight_fence = in_flight_fences_[current_frame_];
@@ -715,12 +735,13 @@ RenderContext RenderCore::BeginDraw() {
   begin_render_info.render_pass = render_pass_;
 
   if (framebuffers_[next_image_index_] == nullptr) {
-    framebuffers_[next_image_index_] =
-        std::make_shared<Framebuffer>(device_, *begin_render_info.render_pass, begin_render_info.render_pass_info);
+    framebuffers_[next_image_index_] = std::make_shared<Framebuffer>(device_, *begin_render_info.render_pass,
+                                                                     begin_render_info.render_pass_info);
   }
   begin_render_info.framebuffer = framebuffers_[next_image_index_];
 
   context.command_buffer.BeginRenderPass(begin_render_info);
+  context.command_buffer.SetDescriptorSet(0, descriptor_sets_[next_image_index_]);
 
   VkViewport viewport{};
   viewport.x = 0.0F;

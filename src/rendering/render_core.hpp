@@ -29,9 +29,6 @@ struct RenderData {
 struct RenderContext {
   CommandBuffer command_buffer;
   
-  VkDescriptorSet descriptor_set;
-  VkFramebuffer swap_chain_framebuffer;
-
   VkSemaphore image_available_semaphore;
   VkSemaphore render_finished_semaphore;
 

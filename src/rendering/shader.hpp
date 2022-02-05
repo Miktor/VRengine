@@ -1,8 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "rendering/pipeline.hpp"
 
 #include <vulkan/vulkan_core.h>
 
@@ -55,6 +57,20 @@ struct CombinedResourceLayout {
   std::unordered_map<uint8_t, DescriptorSetLayout> descriptor_set_layouts;
 };
 
+class PipelineLayout {
+ public:
+  PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout);
+
+  const std::vector<VkDescriptorSetLayout> &GetDescriptorSetLayouts() const { return descriptor_set_layouts_; }
+  VkPipelineLayout GetPipelineLayout() const { return pipeline_layout_; }
+
+ private:
+  VkDevice device_;
+  std::vector<VkDescriptorSetLayout> descriptor_set_layouts_;
+  VkPipelineLayout pipeline_layout_;
+  CombinedResourceLayout resource_layout_;
+};
+
 class Material {
  public:
   Material(VkDevice device, Shader &&fragment, Shader &&vertex);
@@ -62,7 +78,7 @@ class Material {
   std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const;
   std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>> GetInputBindings() const;
 
-  VkPipelineLayout GetPipelineLayout() const;
+  PipelineLayout &GetPipelineLayout() const;
 
  private:
   VkDevice device_;
@@ -70,8 +86,9 @@ class Material {
   Shader fragment_;
   Shader vertex_;
   VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
-  VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
+
   CombinedResourceLayout combined_resource_layout_;
+  std::shared_ptr<PipelineLayout> pipeline_layout_;
 
  private:
   VkDescriptorSetLayout GetDescriptorSetLayout();

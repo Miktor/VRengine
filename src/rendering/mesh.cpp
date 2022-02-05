@@ -52,9 +52,6 @@ void Mesh::Render(rendering::RenderContext &context) {
   context.command_buffer.BindIndexBuffer(*index_buffer_, 0, VK_INDEX_TYPE_UINT32);
   context.command_buffer.BindMaterial(*material_);
 
-  vkCmdBindDescriptorSets(context.command_buffer.GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, material_->GetPipelineLayout(), 0, 1,
-                          &context.descriptor_set, 0, nullptr);
-
   // TODO: make it for each mesh
   {
     rendering::UniformBufferObject data{};

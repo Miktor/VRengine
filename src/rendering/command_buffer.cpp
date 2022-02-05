@@ -62,12 +62,18 @@ void CommandBuffer::BeginRenderPass(const BeginRenderInfo &info) {
   state_.render_pass = info.render_pass;
 }
 
-void CommandBuffer::SetViewport(const VkViewport &viewport) { vkCmdSetViewport(command_buffer_, 0, 1, &viewport); }
+void CommandBuffer::SetViewport(const VkViewport &viewport) {
+  vkCmdSetViewport(command_buffer_, 0, 1, &viewport);
+}
 
 void CommandBuffer::SetScissors(const VkRect2D &scissor) { vkCmdSetScissor(command_buffer_, 0, 1, &scissor); }
 
-void CommandBuffer::BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset, VkDeviceSize stride,
-                                      VkVertexInputRate step_rate) {
+void CommandBuffer::SetDescriptorSet(uint8_t set, VkDescriptorSet descriptor_set) {
+  state_.descriptor_sets[set] = descriptor_set;
+}
+
+void CommandBuffer::BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset,
+                                      VkDeviceSize stride, VkVertexInputRate step_rate) {
   const auto vk_buffer = buffer.GetBuffer();
   vkCmdBindVertexBuffers(command_buffer_, binding, 1, &vk_buffer, &offset);
 }
@@ -76,14 +82,28 @@ void CommandBuffer::BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, V
   vkCmdBindIndexBuffer(command_buffer_, buffer.GetBuffer(), offset, index_type);
 }
 
-void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer) {}
+void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer) {
+  auto &resource_binding = state_.resource_bindings_[set][binding];
+  resource_binding.buffer = buffer.GetBuffer();
+}
 
+void BindDescriptorSet(uint8_t set, VkDescriptorSet descriptor_set);
 void CommandBuffer::BindMaterial(const Material &material) { state_.material = &material; }
 
-void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset,
-                                uint32_t first_instance) {
+void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index,
+                                int32_t vertex_offset, uint32_t first_instance) {
+  BindDescriptorSet(0);
   vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, BuildGraphicsPipeline());
   vkCmdDrawIndexed(command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
+}
+
+void CommandBuffer::BindDescriptorSet(uint32_t set) {
+  const auto &descriptor_sets = state_.descriptor_sets;
+  VR_ASSERT(descriptor_sets.find(set) != descriptor_sets.end());
+
+  vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          state_.material->GetPipelineLayout().GetPipelineLayout(), set, 1,
+                          &descriptor_sets.find(set)->second, 0, nullptr);
 }
 
 VkPipeline CommandBuffer::BuildGraphicsPipeline() {
@@ -124,8 +144,8 @@ VkPipeline CommandBuffer::BuildGraphicsPipeline() {
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
   VkPipelineColorBlendAttachmentState color_blend_attachment{};
-  color_blend_attachment.colorWriteMask =
-      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+  color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
   color_blend_attachment.blendEnable = VK_FALSE;
 
   VkPipelineColorBlendStateCreateInfo color_blending{};
@@ -160,13 +180,14 @@ VkPipeline CommandBuffer::BuildGraphicsPipeline() {
   pipeline_info.pRasterizationState = &rasterizer;
   pipeline_info.pMultisampleState = &multisampling;
   pipeline_info.pColorBlendState = &color_blending;
-  pipeline_info.layout = state_.material->GetPipelineLayout();
+  pipeline_info.layout = state_.material->GetPipelineLayout().GetPipelineLayout();
   pipeline_info.renderPass = state_.render_pass->GetRenderPass();
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 
   VkPipeline graphics_pipeline;
-  CHECK_VK_SUCCESS(vkCreateGraphicsPipelines(core_->GetDevice(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline));
+  CHECK_VK_SUCCESS(vkCreateGraphicsPipelines(core_->GetDevice(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr,
+                                             &graphics_pipeline));
 
   return graphics_pipeline;
 }

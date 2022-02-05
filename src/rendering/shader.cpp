@@ -2,6 +2,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -104,10 +105,10 @@ std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const Sh
   return result;
 }
 
-std::vector<VkDescriptorSetLayoutBinding> GetLayoutBindings(const Shader &vertex) {
-  std::vector<VkDescriptorSetLayoutBinding> result;
+std::unordered_map<uint8_t, std::vector<VkDescriptorSetLayoutBinding>> GetLayoutBindings(const CombinedResourceLayout &resource_layout) {
+  std::unordered_map<uint8_t, std::vector<VkDescriptorSetLayoutBinding>> result;
 
-  for (const auto &[set, descriptor_set_layoout] : vertex.GetResourceLayout().descriptor_set_layouts) {
+  for (const auto &[set, descriptor_set_layoout] : resource_layout.descriptor_set_layouts) {
     for (const auto &ubo : descriptor_set_layoout.uniform_buffers) {
       VkDescriptorSetLayoutBinding layout_binding{};
 
@@ -117,22 +118,30 @@ std::vector<VkDescriptorSetLayoutBinding> GetLayoutBindings(const Shader &vertex
       layout_binding.pImmutableSamplers = nullptr;
       layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-      result.push_back(layout_binding);
+      result[set].push_back(layout_binding);
     }
   }
 
   return result;
 }
 
-VkPipelineLayout CreatePipelineLayout(VkDevice device, VkDescriptorSetLayout set_layout) {
-  VkPipelineLayoutCreateInfo pipeline_layout_info{};
-  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = 1;
-  pipeline_layout_info.pSetLayouts = &set_layout;
+std::vector<VkDescriptorSetLayout> GetDescriptorSetLayouts(
+    VkDevice device, const std::unordered_map<uint8_t, std::vector<VkDescriptorSetLayoutBinding>> &bindings) {
+  std::vector<VkDescriptorSetLayout> result;
+  result.reserve(bindings.size());
 
-  VkPipelineLayout pipeline_layout;
-  CHECK_VK_SUCCESS(vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout));
-  return pipeline_layout;
+  for (const auto &[_, binding] : bindings) {
+    VkDescriptorSetLayoutCreateInfo layout_info{};
+    layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layout_info.bindingCount = binding.size();
+    layout_info.pBindings = binding.data();
+
+    VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
+    CHECK_VK_SUCCESS(vkCreateDescriptorSetLayout(device, &layout_info, nullptr, &descriptor_set_layout));
+    result.push_back(descriptor_set_layout);
+  }
+
+  return result;
 }
 
 void UpdateFromShader(CombinedResourceLayout &result, const Shader &shader) {
@@ -168,11 +177,22 @@ Shader::Shader(VkDevice device, Type type, const std::string &path) : device_(de
   resource_layout_ = ::vre::rendering::GetResourceLayout(std::move(spirv));
 }
 
+PipelineLayout::PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout)
+    : device_(device), resource_layout_(resource_layout) {
+  descriptor_set_layouts_ = ::vre::rendering::GetDescriptorSetLayouts(device_, GetLayoutBindings(resource_layout_));
+
+  VkPipelineLayoutCreateInfo pipeline_layout_info{};
+  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  pipeline_layout_info.setLayoutCount = descriptor_set_layouts_.size();
+  pipeline_layout_info.pSetLayouts = descriptor_set_layouts_.data();
+
+  CHECK_VK_SUCCESS(vkCreatePipelineLayout(device_, &pipeline_layout_info, nullptr, &pipeline_layout_));
+}
+
 Material::Material(VkDevice device, Shader &&fragment, Shader &&vertex)
     : device_(device), fragment_(std::move(fragment)), vertex_(std::move(vertex)) {
-  pipeline_layout_ = CreatePipelineLayout(device_, GetDescriptorSetLayout());
-
   combined_resource_layout_ = BuildCombinedResourceLayout(fragment_, vertex_);
+  pipeline_layout_ = std::make_shared<PipelineLayout>(device_, combined_resource_layout_);
 }
 
 std::vector<VkPipelineShaderStageCreateInfo> Material::GetShaderStages() const {
@@ -196,21 +216,6 @@ std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInp
   return std::make_tuple(GetBindingDescription(vertex_), GetAttributeDescriptions(vertex_));
 }
 
-VkDescriptorSetLayout Material::GetDescriptorSetLayout() {
-  if (descriptor_set_layout_ != VK_NULL_HANDLE) {
-    return descriptor_set_layout_;
-  }
-
-  auto ubo_layout_bindings = GetLayoutBindings(vertex_);
-  VkDescriptorSetLayoutCreateInfo layout_info{};
-  layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layout_info.bindingCount = ubo_layout_bindings.size();
-  layout_info.pBindings = ubo_layout_bindings.data();
-
-  CHECK_VK_SUCCESS(vkCreateDescriptorSetLayout(device_, &layout_info, nullptr, &descriptor_set_layout_));
-  return descriptor_set_layout_;
-}
-
-VkPipelineLayout Material::GetPipelineLayout() const { return pipeline_layout_; }
+PipelineLayout &Material::GetPipelineLayout() const { return *pipeline_layout_; }
 
 }  // namespace vre::rendering

@@ -496,7 +496,7 @@ std::vector<VkDescriptorSet> CreateDescriptorSets(
 
   for (size_t i = 0; i < count; i++) {
     VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = uniform_buffers[i]->buffer;
+    buffer_info.buffer = uniform_buffers[i]->GetBuffer();
     buffer_info.offset = 0;
     buffer_info.range = sizeof(UniformBufferObject);
 

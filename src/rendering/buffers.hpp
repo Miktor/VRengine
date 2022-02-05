@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
 #include "common.hpp"
 
 namespace vre {
@@ -13,22 +12,23 @@ namespace rendering {
 class Buffer {
  public:
   Buffer(VkDevice device, VkBuffer buffer, VkDeviceMemory buffer_memory, VkDeviceSize size)
-      : device(device), buffer(buffer), buffer_memory(buffer_memory), size(size) {}
+      : device_(device), buffer_(buffer), buffer_memory_(buffer_memory), size_(size) {}
 
   void Update(const void *data) {
     void *buffer_data = nullptr;
-    vkMapMemory(device, buffer_memory, 0, size, 0, &buffer_data);
-    memcpy(buffer_data, data, size);
-    vkUnmapMemory(device, buffer_memory);
+    vkMapMemory(device_, buffer_memory_, 0, size_, 0, &buffer_data);
+    memcpy(buffer_data, data, size_);
+    vkUnmapMemory(device_, buffer_memory_);
   }
 
-  VkDeviceSize GetSize() const { return size; }
-  VkBuffer GetBuffer() const { return buffer; }
+  [[nodiscard]] VkDeviceSize GetSize() const { return size_; }
+  [[nodiscard]] VkBuffer GetBuffer() const { return buffer_; }
 
-  VkDevice device;
-  VkDeviceSize size;
-  VkBuffer buffer;
-  VkDeviceMemory buffer_memory;
+ private:
+  VkDevice device_;
+  VkDeviceSize size_;
+  VkBuffer buffer_;
+  VkDeviceMemory buffer_memory_;
 };
 
 class IndexBuffer : public Buffer {

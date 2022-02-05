@@ -39,14 +39,14 @@ shaderc::SpvCompilationResult Compile(const std::string &data, const std::string
   return result;
 }
 
-ReflectionData GetReflectionData(std::vector<uint32_t> &&spirv) {
+ResourceLayout GetResourceLayout(std::vector<uint32_t> &&spirv) {
   spirv_cross::Compiler compiler(std::move(spirv));
 
   auto resources = compiler.get_shader_resources();
-  ReflectionData result;
+  ResourceLayout result;
 
   for (auto &resource : resources.stage_inputs) {
-    ReflectionData::Input input{};
+    ResourceLayout::Input input{};
     input.name = resource.name;
     input.location = compiler.get_decoration(resource.id, spv::DecorationLocation);
 
@@ -57,16 +57,15 @@ ReflectionData GetReflectionData(std::vector<uint32_t> &&spirv) {
   }
 
   for (auto &resource : resources.uniform_buffers) {
-    unsigned set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-    unsigned binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+    const auto set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+    const auto binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
     SPDLOG_INFO("UB {} at set = {}, binding = {}", resource.name.c_str(), set, binding);
 
-    ReflectionData::UniformBuffer ub{};
+    DescriptorSetLayout::UniformBuffer ub{};
     ub.name = resource.name;
-    ub.set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-    ub.binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+    ub.binding = binding;
 
-    result.uniform_buffers.push_back(ub);
+    result.descriptor_set_layoouts[set].uniform_buffers.push_back(ub);
   }
 
   return result;
@@ -75,7 +74,7 @@ ReflectionData GetReflectionData(std::vector<uint32_t> &&spirv) {
 std::vector<VkVertexInputBindingDescription> GetBindingDescription(const Shader &vertex) {
   std::vector<VkVertexInputBindingDescription> result;
 
-  for (const auto &input : vertex.GetInputs()) {
+  for (const auto &input : vertex.GetResourceLayout().inputs) {
     VkVertexInputBindingDescription binding_description{};
 
     binding_description.binding = 0;
@@ -91,7 +90,7 @@ std::vector<VkVertexInputBindingDescription> GetBindingDescription(const Shader 
 std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const Shader &vertex) {
   std::vector<VkVertexInputAttributeDescription> result;
 
-  for (const auto &input : vertex.GetInputs()) {
+  for (const auto &input : vertex.GetResourceLayout().inputs) {
     VkVertexInputAttributeDescription attribute_description{};
 
     attribute_description.binding = 0;
@@ -108,16 +107,18 @@ std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const Sh
 std::vector<VkDescriptorSetLayoutBinding> GetLayoutBindings(const Shader &vertex) {
   std::vector<VkDescriptorSetLayoutBinding> result;
 
-  for (const auto &ubo : vertex.GetUniformBuffers()) {
-    VkDescriptorSetLayoutBinding layout_binding{};
+  for (const auto &[set, descriptor_set_layoout] : vertex.GetResourceLayout().descriptor_set_layoouts) {
+    for (const auto &ubo : descriptor_set_layoout.uniform_buffers) {
+      VkDescriptorSetLayoutBinding layout_binding{};
 
-    layout_binding.binding = ubo.binding;
-    layout_binding.descriptorCount = 1;
-    layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    layout_binding.pImmutableSamplers = nullptr;
-    layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+      layout_binding.binding = ubo.binding;
+      layout_binding.descriptorCount = 1;
+      layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      layout_binding.pImmutableSamplers = nullptr;
+      layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    result.push_back(layout_binding);
+      result.push_back(layout_binding);
+    }
   }
 
   return result;
@@ -148,7 +149,7 @@ Shader::Shader(VkDevice device, Type type, const std::string &path) : device_(de
 
   CHECK_VK_SUCCESS(vkCreateShaderModule(device_, &create_info, nullptr, &shader_module_));
 
-  reflection_data_ = GetReflectionData(std::move(spirv));
+  resource_layout_ = ::vre::rendering::GetResourceLayout(std::move(spirv));
 }
 
 Material::Material(VkDevice device, Shader &&fragment, Shader &&vertex)

@@ -65,7 +65,7 @@ ResourceLayout GetResourceLayout(std::vector<uint32_t> &&spirv) {
     ub.name = resource.name;
     ub.binding = binding;
 
-    result.descriptor_set_layoouts[set].uniform_buffers.push_back(ub);
+    result.descriptor_set_layouts[set].uniform_buffers.push_back(ub);
   }
 
   return result;
@@ -107,7 +107,7 @@ std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const Sh
 std::vector<VkDescriptorSetLayoutBinding> GetLayoutBindings(const Shader &vertex) {
   std::vector<VkDescriptorSetLayoutBinding> result;
 
-  for (const auto &[set, descriptor_set_layoout] : vertex.GetResourceLayout().descriptor_set_layoouts) {
+  for (const auto &[set, descriptor_set_layoout] : vertex.GetResourceLayout().descriptor_set_layouts) {
     for (const auto &ubo : descriptor_set_layoout.uniform_buffers) {
       VkDescriptorSetLayoutBinding layout_binding{};
 
@@ -135,6 +135,22 @@ VkPipelineLayout CreatePipelineLayout(VkDevice device, VkDescriptorSetLayout set
   return pipeline_layout;
 }
 
+void UpdateFromShader(CombinedResourceLayout &result, const Shader &shader) {
+  for (const auto &[set, layout] : shader.GetResourceLayout().descriptor_set_layouts) {
+    auto &result_layout = result.descriptor_set_layouts[set];
+    result_layout.uniform_buffers.insert(result_layout.uniform_buffers.end(), layout.uniform_buffers.begin(), layout.uniform_buffers.end());
+  }
+}
+
+CombinedResourceLayout BuildCombinedResourceLayout(const Shader &fragment, const Shader &vertex) {
+  CombinedResourceLayout result;
+
+  UpdateFromShader(result, fragment);
+  UpdateFromShader(result, vertex);
+
+  return result;
+}
+
 }  // namespace
 
 Shader::Shader(VkDevice device, Type type, const std::string &path) : device_(device), type_(type), path_(path) {
@@ -155,6 +171,8 @@ Shader::Shader(VkDevice device, Type type, const std::string &path) : device_(de
 Material::Material(VkDevice device, Shader &&fragment, Shader &&vertex)
     : device_(device), fragment_(std::move(fragment)), vertex_(std::move(vertex)) {
   pipeline_layout_ = CreatePipelineLayout(device_, GetDescriptorSetLayout());
+
+  combined_resource_layout_ = BuildCombinedResourceLayout(fragment_, vertex_);
 }
 
 std::vector<VkPipelineShaderStageCreateInfo> Material::GetShaderStages() const {

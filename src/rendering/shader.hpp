@@ -24,7 +24,7 @@ struct ResourceLayout {
   };
 
   std::vector<Input> inputs;
-  std::unordered_map<uint8_t, DescriptorSetLayout> descriptor_set_layoouts;
+  std::unordered_map<uint8_t, DescriptorSetLayout> descriptor_set_layouts;
 };
 
 class Shader {
@@ -51,6 +51,10 @@ class Shader {
   VkShaderModule shader_module_;
 };
 
+struct CombinedResourceLayout {
+  std::unordered_map<uint8_t, DescriptorSetLayout> descriptor_set_layouts;
+};
+
 class Material {
  public:
   Material(VkDevice device, Shader &&fragment, Shader &&vertex);
@@ -67,6 +71,7 @@ class Material {
   Shader vertex_;
   VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
   VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
+  CombinedResourceLayout combined_resource_layout_;
 
  private:
   VkDescriptorSetLayout GetDescriptorSetLayout();

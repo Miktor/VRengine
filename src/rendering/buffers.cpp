@@ -6,7 +6,8 @@ namespace vre::rendering {
 
 namespace {
 
-void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size, VkDevice device, VkCommandPool command_pool, VkQueue queue) {
+void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size, VkDevice device,
+                VkCommandPool command_pool, VkQueue queue) {
   VkCommandBufferAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -39,12 +40,14 @@ void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size, VkD
   vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
 }
 
-uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties, VkPhysicalDevice physical_device) {
+uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties,
+                        VkPhysicalDevice physical_device) {
   VkPhysicalDeviceMemoryProperties mem_properties;
   vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_properties);
 
   for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++) {
-    if (((type_filter & (1 << i)) != 0U) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+    if (((type_filter & (1 << i)) != 0U) &&
+        (mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
       return i;
     }
   }
@@ -52,8 +55,10 @@ uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties, 
   throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void CreateBuffer(VkBuffer &buffer, VkDeviceMemory &buffer_memory, VkDeviceSize size, VkBufferUsageFlags usage,
-                  VkMemoryPropertyFlags properties, VkDevice device, VkPhysicalDevice physical_device) {
+// TODO: delete
+void CreateBuffer(VkBuffer &buffer, VkDeviceMemory &buffer_memory, VkDeviceSize size,
+                  VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDevice device,
+                  VkPhysicalDevice physical_device) {
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.size = size;
@@ -80,12 +85,14 @@ void CreateBuffer(VkBuffer &buffer, VkDeviceMemory &buffer_memory, VkDeviceSize 
 }
 
 template <typename T>
-std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceSize buffer_size, VkDevice device,
-                                              VkPhysicalDevice physical_device, VkCommandPool command_pool, VkQueue queue) {
+std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceSize buffer_size,
+                                              VkDevice device, VkPhysicalDevice physical_device,
+                                              VkCommandPool command_pool, VkQueue queue) {
   VkBuffer staging_buffer;
   VkDeviceMemory staging_buffer_memory;
   CreateBuffer(staging_buffer, staging_buffer_memory, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, device, physical_device);
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, device,
+               physical_device);
 
   void *data;
   vkMapMemory(device, staging_buffer_memory, 0, buffer_size, 0, &data);
@@ -94,8 +101,8 @@ std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceS
 
   VkBuffer buffer;
   VkDeviceMemory buffer_memory;
-  CreateBuffer(buffer, buffer_memory, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | T::kBufferBit, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-               device, physical_device);
+  CreateBuffer(buffer, buffer_memory, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | T::kBufferBit,
+               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, device, physical_device);
 
   CopyBuffer(staging_buffer, buffer, buffer_size, device, command_pool, queue);
 
@@ -107,24 +114,50 @@ std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceS
 
 }  // namespace
 
-std::shared_ptr<rendering::VertexBuffer> RenderCore::CreateVertexBuffer(const std::vector<glm::vec3> &vertexes) {
-  return CrateBufferThroughtStaging<rendering::VertexBuffer>(reinterpret_cast<const void *>(vertexes.data()),
-                                                             vertexes.size() * sizeof(vertexes.front()), device_, physical_device_,
-                                                             command_pool_, graphics_queue_);
+std::shared_ptr<Buffer> RenderCore::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                                                 VkMemoryPropertyFlags properties) {
+  VkBufferCreateInfo buffer_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+  buffer_info.size = size;
+  buffer_info.usage = usage;
+  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+  VkBuffer vk_buffer;
+  CHECK_VK_SUCCESS(vkCreateBuffer(device_, &buffer_info, nullptr, &vk_buffer));
+
+  VkMemoryRequirements mem_requirements;
+  vkGetBufferMemoryRequirements(device_, vk_buffer, &mem_requirements);
+
+  VkMemoryAllocateInfo alloc_info{};
+  alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  alloc_info.allocationSize = mem_requirements.size;
+  alloc_info.memoryTypeIndex = FindMemoryType(mem_requirements.memoryTypeBits, properties, physical_device_);
+
+  VkDeviceMemory buffer_memory;
+  CHECK_VK_SUCCESS(vkAllocateMemory(device_, &alloc_info, nullptr, &buffer_memory));
+
+  return std::make_shared<Buffer>(device_, vk_buffer, buffer_memory, size);
 }
 
 std::shared_ptr<rendering::IndexBuffer> RenderCore::CreateIndexBuffer(const std::vector<uint32_t> &indices) {
   return CrateBufferThroughtStaging<rendering::IndexBuffer>(reinterpret_cast<const void *>(indices.data()),
-                                                            sizeof(indices[0]) * indices.size(), device_, physical_device_, command_pool_,
-                                                            graphics_queue_);
+                                                            sizeof(indices[0]) * indices.size(), device_,
+                                                            physical_device_, command_pool_, graphics_queue_);
+}
+
+std::shared_ptr<rendering::VertexBuffer> RenderCore::CreateVertexBuffer(
+    const std::vector<glm::vec3> &vertexes) {
+  return CrateBufferThroughtStaging<rendering::VertexBuffer>(
+      reinterpret_cast<const void *>(vertexes.data()), vertexes.size() * sizeof(vertexes.front()), device_,
+      physical_device_, command_pool_, graphics_queue_);
 }
 
 std::shared_ptr<UniformBuffer> RenderCore::CreateUniformBuffer(const VkDeviceSize size) {
   VkBuffer buffer;
   VkDeviceMemory buffer_memory;
 
-  CreateBuffer(buffer, buffer_memory, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, device_, physical_device_);
+  ::vre::rendering::CreateBuffer(buffer, buffer_memory, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                 device_, physical_device_);
 
   return std::make_shared<UniformBuffer>(device_, buffer, buffer_memory, size);
 }

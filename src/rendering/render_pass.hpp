@@ -46,7 +46,6 @@ struct RenderPassInfo {
   struct Subpass {
     std::vector<uint32_t> color_attachments;
 
-    DepthStencil depth_stencil_mode = DepthStencil::ReadWrite;
   };
 
   std::vector<Subpass> subpasses;

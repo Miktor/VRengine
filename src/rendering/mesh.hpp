@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include "common.hpp"
 
 #include "rendering/buffers.hpp"

@@ -1,12 +1,8 @@
 #pragma once
 
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include "rendering/pipeline.hpp"
+#include "common.hpp"
 
-#include <vulkan/vulkan_core.h>
+#include "rendering/pipeline.hpp"
 
 namespace vre::rendering {
 
@@ -61,7 +57,9 @@ class PipelineLayout {
  public:
   PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout);
 
-  const std::vector<VkDescriptorSetLayout> &GetDescriptorSetLayouts() const { return descriptor_set_layouts_; }
+  const std::vector<VkDescriptorSetLayout> &GetDescriptorSetLayouts() const {
+    return descriptor_set_layouts_;
+  }
   VkPipelineLayout GetPipelineLayout() const { return pipeline_layout_; }
 
  private:
@@ -76,7 +74,8 @@ class Material {
   Material(VkDevice device, Shader &&fragment, Shader &&vertex);
 
   std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const;
-  std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>> GetInputBindings() const;
+  std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>>
+  GetInputBindings() const;
 
   PipelineLayout &GetPipelineLayout() const;
 

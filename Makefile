@@ -10,7 +10,7 @@ clean:
 
 .PHONY: clang-tidy
 clang-tidy: 
-	cmake -DCMAKE_CXX_CLANG_TIDY="$(CLANG_TIDY_BINARY)" -B "$(BUILD_DIR)" ./ && \
+	cmake -DCLANG_TIDY="$(CLANG_TIDY_BINARY)" -B "$(BUILD_DIR)" ./ && \
 		make -C "$(BUILD_DIR)" -j$(NPROCS)
 
 .PHONY: clang-tidy-fix

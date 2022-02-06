@@ -42,7 +42,7 @@ void CommandBuffer::BeginRenderPass(const BeginRenderInfo &info) {
   for (unsigned i = 0; i < info.render_pass_info.color_attachments.size(); i++) {
     const auto &clear_color = info.render_pass_info.clear_color[i];
 
-    if (info.render_pass_info.clear_attachments & (1u << i)) {
+    if ((info.render_pass_info.clear_attachments & (1U << i)) != 0U) {
       clear_values[i].color = clear_color;
       num_clear_values = i + 1;
     }

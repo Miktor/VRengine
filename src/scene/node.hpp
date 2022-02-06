@@ -8,7 +8,7 @@
 
 namespace vre::rendering {
 class Mesh;
-}
+} // namespace vre::rendering
 
 namespace vre::scene {
 

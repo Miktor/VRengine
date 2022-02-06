@@ -34,9 +34,9 @@ class Shader {
 
   Shader(VkDevice device, Type type, const std::string &path);
 
-  VkShaderModule GetShaderModule() const { return shader_module_; }
+  [[nodiscard]] VkShaderModule GetShaderModule() const { return shader_module_; }
 
-  const ResourceLayout &GetResourceLayout() const { return resource_layout_; }
+  [[nodiscard]] const ResourceLayout &GetResourceLayout() const { return resource_layout_; }
 
  private:
   VkDevice device_;
@@ -57,10 +57,10 @@ class PipelineLayout {
  public:
   PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout);
 
-  const std::vector<VkDescriptorSetLayout> &GetDescriptorSetLayouts() const {
+  [[nodiscard]] const std::vector<VkDescriptorSetLayout> &GetDescriptorSetLayouts() const {
     return descriptor_set_layouts_;
   }
-  VkPipelineLayout GetPipelineLayout() const { return pipeline_layout_; }
+  [[nodiscard]] VkPipelineLayout GetPipelineLayout() const { return pipeline_layout_; }
 
  private:
   VkDevice device_;
@@ -73,11 +73,11 @@ class Material {
  public:
   Material(VkDevice device, Shader &&fragment, Shader &&vertex);
 
-  std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const;
-  std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>>
+  [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const;
+  [[nodiscard]] std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>>
   GetInputBindings() const;
 
-  PipelineLayout &GetPipelineLayout() const;
+  [[nodiscard]] PipelineLayout &GetPipelineLayout() const;
 
  private:
   VkDevice device_;

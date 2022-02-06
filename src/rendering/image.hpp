@@ -1,7 +1,5 @@
 #pragma once
 
-#include <_types/_uint32_t.h>
-#include <memory>
 #include "common.hpp"
 
 namespace vre::rendering {
@@ -40,7 +38,7 @@ class ImageView {
 
   [[nodiscard]] const ImageViewCreateInfo &GetCreateInfo() const { return info_; }
 
-  VkImageView GetRenderTargetView() const { return view_; }
+  [[nodiscard]]  VkImageView GetRenderTargetView() const { return view_; }
 
  private:
   VkImageView view_;
@@ -80,7 +78,8 @@ struct ImageCreateInfo {
     info.format = format;
     info.type = VK_IMAGE_TYPE_2D;
     info.layers = 1;
-    info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                 VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     info.samples = VK_SAMPLE_COUNT_1_BIT;
     info.flags = 0;
@@ -92,29 +91,30 @@ struct ImageCreateInfo {
 
 class Image {
  public:
-  Image(VkDevice device, VkImage image, VkImageView default_view, const ImageCreateInfo &info, VkImageViewType view_type);
+  Image(VkDevice device, VkImage image, VkImageView default_view, const ImageCreateInfo &info,
+        VkImageViewType view_type);
 
   Image(Image &) = delete;
   Image(Image &&) = default;
 
-  ImageViewPtr GetView() { return view_; }
+  [[nodiscard]] ImageViewPtr GetView() { return view_; }
 
-  const ImageCreateInfo &GetCreateInfo() const { return info_; }
+  [[nodiscard]] const ImageCreateInfo &GetCreateInfo() const { return info_; }
 
-  uint32_t GetWidth() const { return info_.width; }
-  uint32_t GetHeight() const { return info_.height; }
+  [[nodiscard]] uint32_t GetWidth() const { return info_.width; }
+  [[nodiscard]] uint32_t GetHeight() const { return info_.height; }
 
-  bool IsSwapchainImage() const { return swapchain_layout != VK_IMAGE_LAYOUT_UNDEFINED; }
+  [[nodiscard]] bool IsSwapchainImage() const { return swapchain_layout_ != VK_IMAGE_LAYOUT_UNDEFINED; }
 
-  VkImageLayout GetSwapchainLayout() const { return swapchain_layout; }
+  [[nodiscard]] VkImageLayout GetSwapchainLayout() const { return swapchain_layout_; }
 
-  void SetSwapchainLayout(VkImageLayout layout) { swapchain_layout = layout; }
+  void SetSwapchainLayout(VkImageLayout layout) { swapchain_layout_ = layout; }
 
  private:
   const ImageCreateInfo info_;
   ImageViewPtr view_;
 
-  VkImageLayout swapchain_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+  VkImageLayout swapchain_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
 };
 using ImagePtr = std::shared_ptr<Image>;
 

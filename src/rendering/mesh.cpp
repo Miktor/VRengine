@@ -8,10 +8,11 @@
 namespace vre::rendering {
 
 std::shared_ptr<Material> GetDefaultMaterial(VkDevice device) {
-  std::shared_ptr<Material> kMaterial;
+  static std::shared_ptr<Material> kMaterial;
   if (!kMaterial) {
-    kMaterial = std::make_shared<Material>(device, Shader(device, Shader::kFragment, "assets/shaders/shader.frag"),
-                                           Shader(device, Shader::kVertex, "assets/shaders/shader.vert"));
+    kMaterial =
+        std::make_shared<Material>(device, Shader(device, Shader::kFragment, "assets/shaders/shader.frag"),
+                                   Shader(device, Shader::kVertex, "assets/shaders/shader.vert"));
   }
   return kMaterial;
 }
@@ -28,11 +29,11 @@ void Mesh::AddPrimitive(std::vector<glm::vec3> vert, const std::vector<uint32_t>
   }
 
   Primitive primitive{};
-  primitive.index_count_ = indicies.size();
-  primitive.index_start_ = index_start;
-  primitive.vertex_count_ = vert.size();
-  primitive.vertex_start_ = vertex_start;
-  primitives_.push_back(std::move(primitive));
+  primitive.index_count = indicies.size();
+  primitive.index_start = index_start;
+  primitive.vertex_count = vert.size();
+  primitive.vertex_start = vertex_start;
+  primitives_.push_back(primitive);
 }
 
 void Mesh::InitializeVulkan(RenderCore &renderer) {
@@ -48,7 +49,8 @@ void Mesh::InitializeVulkan(RenderCore &renderer) {
 }
 
 void Mesh::Render(rendering::RenderContext &context) {
-  context.command_buffer.BindVertexBuffers(0, *vertex_buffer_, 0, sizeof(glm::vec3), VK_VERTEX_INPUT_RATE_VERTEX);
+  context.command_buffer.BindVertexBuffers(0, *vertex_buffer_, 0, sizeof(glm::vec3),
+                                           VK_VERTEX_INPUT_RATE_VERTEX);
   context.command_buffer.BindIndexBuffer(*index_buffer_, 0, VK_INDEX_TYPE_UINT32);
   context.command_buffer.BindMaterial(*material_);
 
@@ -65,7 +67,7 @@ void Mesh::Render(rendering::RenderContext &context) {
 
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {
-    context.command_buffer.DrawIndexed(static_cast<uint32_t>(primitive.index_count_), 1, 0, 0, 0);
+    context.command_buffer.DrawIndexed(static_cast<uint32_t>(primitive.index_count), 1, 0, 0, 0);
   }
 }
 

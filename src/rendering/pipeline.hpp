@@ -8,8 +8,8 @@ class Pipeline {
  public:
   Pipeline(VkDevice device) : device_(device) {}
 
-  VkPipeline GetPipeline() { return graphics_pipeline_; }
-  VkPipelineLayout GetLayout() { return pipeline_layout_; }
+  [[nodiscard]] VkPipeline GetPipeline() { return graphics_pipeline_; }
+  [[nodiscard]] VkPipelineLayout GetLayout() { return pipeline_layout_; }
 
  private:
   VkDevice device_;

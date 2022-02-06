@@ -11,11 +11,11 @@ namespace vre ::rendering {
 class RenderCore;
 
 struct Primitive {
-  uint32_t index_start_ = 0;
-  uint32_t vertex_start_ = 0;
+  uint32_t index_start = 0;
+  uint32_t vertex_start = 0;
 
-  uint32_t index_count_ = 0;
-  uint32_t vertex_count_ = 0;
+  uint32_t index_count = 0;
+  uint32_t vertex_count = 0;
 };
 
 class Mesh {

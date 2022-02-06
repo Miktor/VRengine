@@ -10,8 +10,8 @@ class Attachable {
 
   void SetParrent(Node *parent) { parent_ = parent; }
 
-  Node *GetParrent() { return parent_; }
-  const Node *GetParrent() const { return parent_; }
+  [[nodiscard]] Node *GetParrent() { return parent_; }
+  [[nodiscard]] const Node *GetParrent() const { return parent_; }
 
  private:
   Node *parent_ = nullptr;

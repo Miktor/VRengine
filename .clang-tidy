@@ -39,6 +39,7 @@ Checks: >
   -google-readability-braces-around-statements,
   -google-readability-namespace-comments,
   -google-runtime-references,
+  -google-readability-todo,
   -misc-unused-parameters,
   -misc-non-private-member-variables-in-classes,
   -modernize-return-braced-init-list,
@@ -94,7 +95,9 @@ CheckOptions:
     value:           UPPER_CASE
   - key:             readability-identifier-naming.MemberCase
     value:           lower_case
-  - key:             readability-identifier-naming.MemberSuffix
+  - key:             readability-identifier-naming.PrivateMemberSuffix
+    value:           _
+  - key:             readability-identifier-naming.ProtectedMemberSuffix
     value:           _
   - key:             readability-identifier-naming.NamespaceCase
     value:           lower_case

@@ -12,7 +12,7 @@ UniformBufferAllocation UniformBufferPoolAllocator::Allocate(VkDeviceSize minimu
   VR_ASSERT(minimum_size <= block_size_);
 
   VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  auto buffer = render_core_.CreateBuffer(usage, minimum_size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  auto buffer = render_core_.CreateBuffer(minimum_size, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   UniformBufferAllocation allocation;
 

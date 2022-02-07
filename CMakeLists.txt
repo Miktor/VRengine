@@ -61,6 +61,7 @@ target_link_libraries(vrengine_core PUBLIC spdlog::spdlog)
 target_link_libraries(vrengine_core PUBLIC glfw)
 target_link_libraries(vrengine_core PUBLIC shaderc)
 target_link_libraries(vrengine_core PUBLIC spirv-cross-core)
+target_link_libraries(vrengine_core PUBLIC VulkanMemoryAllocator)
 
 add_executable(vrengine $<TARGET_OBJECTS:vrengine_core>)
 target_link_libraries(vrengine PUBLIC vrengine_core)

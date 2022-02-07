@@ -19,3 +19,5 @@ add_subdirectory(shaderc)
 set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_ENABLE_C_API OFF CACHE BOOL "" FORCE)
 add_subdirectory(spirv-cross)
+
+add_subdirectory(vma)

@@ -8,9 +8,11 @@
 
 #include "buffers.hpp"
 #include "common.hpp"
+#include "helpers.hpp"
 #include "platform/platform.hpp"
 #include "rendering/image.hpp"
 #include "shader.hpp"
+#include "vk_mem_alloc.h"
 
 namespace vre::rendering {
 
@@ -126,11 +128,11 @@ VkInstance CreateInstance() {
 
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  app_info.pApplicationName = "Hello Triangle";
+  app_info.pApplicationName = "VRengine";
   app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app_info.pEngineName = "No Engine";
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.apiVersion = VK_API_VERSION_1_0;
+  app_info.apiVersion = VK_API_VERSION_1_2;
 
   VkInstanceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -154,9 +156,7 @@ VkInstance CreateInstance() {
   }
 
   VkInstance instance;
-  if (vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create instance!");
-  }
+  CHECK_VK_SUCCESS(vkCreateInstance(&create_info, nullptr, &instance));
 
   return instance;
 }
@@ -533,6 +533,17 @@ RenderPassInfo CreateDefaultRenderPass(ImageViewPtr image_view) {
   return info;
 }
 
+void InitVMA(VmaAllocator &allocator, VkInstance instance, VkPhysicalDevice physical_device,
+             VkDevice device) {
+  VmaAllocatorCreateInfo allocator_create_info{};
+  allocator_create_info.vulkanApiVersion = VK_API_VERSION_1_2;
+  allocator_create_info.physicalDevice = physical_device;
+  allocator_create_info.device = device;
+  allocator_create_info.instance = instance;
+
+  vmaCreateAllocator(&allocator_create_info, &allocator);
+}
+
 }  // namespace
 
 void RenderCore::InitVulkan(GLFWwindow *window) {
@@ -543,6 +554,9 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
 
   const auto &[device, indices] = CreateLogicalDevice(physical_device_, surface_);
   device_ = device;
+
+  InitVMA(vma_allocator_, instance_, physical_device_, device_);
+
   vkGetDeviceQueue(device_, indices.graphics_family.value(), 0, &graphics_queue_);
   vkGetDeviceQueue(device_, indices.present_family.value(), 0, &present_queue_);
 
@@ -585,6 +599,7 @@ void RenderCore::Cleanup() {
 
   vkDestroyCommandPool(device_, command_pool_, nullptr);
 
+  vmaDestroyAllocator(vma_allocator_);
   vkDestroyDevice(device_, nullptr);
 
   if (kEnableValidationLayers) {

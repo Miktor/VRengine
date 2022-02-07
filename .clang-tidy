@@ -52,6 +52,7 @@ Checks: >
   -readability-redundant-declaration,
   -readability-function-cognitive-complexity,
   -readability-qualified-auto,
+  -readability-avoid-const-params-in-decls,
   -bugprone-narrowing-conversions
   
 

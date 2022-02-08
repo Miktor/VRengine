@@ -36,7 +36,7 @@ struct RenderContext {
   VkFence images_in_flight;
 
   RenderData render_data;
-  std::shared_ptr<UniformBuffer> uniform_buffer;
+  std::shared_ptr<Buffer> uniform_buffer;
 };
 
 class RenderCore {
@@ -65,7 +65,7 @@ class RenderCore {
 
   VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
 
-  std::vector<std::shared_ptr<UniformBuffer>> uniform_buffers_;
+  std::vector<std::shared_ptr<Buffer>> uniform_buffers_;
   VkDescriptorPool descriptor_pool_;
   std::vector<VkDescriptorSet> descriptor_sets_;
 
@@ -89,11 +89,7 @@ class RenderCore {
   void Cleanup();
   void CleanupSwapChain();
 
-  std::shared_ptr<Buffer> CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                                       VmaMemoryUsage memory_usage);
-  std::shared_ptr<IndexBuffer> CreateIndexBuffer(const std::vector<uint32_t> &indices);
-  std::shared_ptr<VertexBuffer> CreateVertexBuffer(const std::vector<glm::vec3> &vertexes);
-  std::shared_ptr<UniformBuffer> CreateUniformBuffer(const VkDeviceSize size);
+  std::shared_ptr<Buffer> CreateBuffer(const CreateBufferInfo &crate_info);
 
   RenderContext BeginDraw();
   void Present(RenderContext &context);

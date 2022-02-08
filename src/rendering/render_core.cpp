@@ -480,7 +480,7 @@ VkDescriptorPool CreateDescriptorPool(const size_t count, VkDevice device) {
 std::vector<VkDescriptorSet> CreateDescriptorSets(
     const uint32_t count, VkDevice device, VkDescriptorPool descriptor_pool,
     VkDescriptorSetLayout descriptor_set_layout,
-    const std::vector<std::shared_ptr<UniformBuffer>> &uniform_buffers) {
+    const std::vector<std::shared_ptr<Buffer>> &uniform_buffers) {
   std::vector<VkDescriptorSetLayout> layouts(count, descriptor_set_layout);
   VkDescriptorSetAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -570,10 +570,18 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
   CreateSyncObjects();
   command_buffers_ = AllocateCommandBuffers(backbuffers_.size(), device, command_pool_);
 
-  uniform_buffers_.reserve(swap_chain_images_.size());
-  for (size_t i = 0; i < swap_chain_images_.size(); i++) {
-    uniform_buffers_.push_back(CreateUniformBuffer(sizeof(UniformBufferObject)));
+  {
+    CreateBufferInfo create_info{};
+    create_info.buffer_size = sizeof(UniformBufferObject);
+    create_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    create_info.memory_usage = VMA_MEMORY_USAGE_CPU_ONLY;
+
+    uniform_buffers_.reserve(swap_chain_images_.size());
+    for (size_t i = 0; i < swap_chain_images_.size(); i++) {
+      uniform_buffers_.push_back(CreateBuffer(create_info));
+    }
   }
+
   descriptor_pool_ = CreateDescriptorPool(swap_chain_images_.size(), device_);
   descriptor_sets_ = CreateDescriptorSets(swap_chain_images_.size(), device_, descriptor_pool_,
                                           descriptor_set_layout_, uniform_buffers_);

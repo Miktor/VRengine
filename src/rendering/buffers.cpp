@@ -1,6 +1,8 @@
 #include "rendering/buffers.hpp"
 #include <vulkan/vulkan_core.h>
+#include <tuple>
 
+#include "helpers.hpp"
 #include "rendering/render_core.hpp"
 #include "vk_mem_alloc.h"
 
@@ -42,24 +44,8 @@ void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size, VkD
   vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
 }
 
-uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties,
-                        VkPhysicalDevice physical_device) {
-  VkPhysicalDeviceMemoryProperties mem_properties;
-  vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_properties);
-
-  for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++) {
-    if (((type_filter & (1 << i)) != 0U) &&
-        (mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
-      return i;
-    }
-  }
-
-  throw std::runtime_error("failed to find suitable memory type!");
-}
-
-// TODO: delete
-VmaAllocation CreateBuffer(VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage,
-                           VmaMemoryUsage memory_usage, VmaAllocator vma_allocator) {
+auto CreateBufferImpl(VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage,
+                      VmaMemoryUsage memory_usage, VmaAllocator vma_allocator) {
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.size = size;
@@ -68,67 +54,42 @@ VmaAllocation CreateBuffer(VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFla
 
   VmaAllocationCreateInfo alloc_info = {};
   alloc_info.usage = memory_usage;
+  alloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
   VmaAllocation allocation;
-  CHECK_VK_SUCCESS(vmaCreateBuffer(vma_allocator, &buffer_info, &alloc_info, &buffer, &allocation, nullptr));
+  VmaAllocationInfo allocation_info;
+  CHECK_VK_SUCCESS(
+      vmaCreateBuffer(vma_allocator, &buffer_info, &alloc_info, &buffer, &allocation, &allocation_info));
 
-  return allocation;
-}
-
-template <typename T>
-std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceSize buffer_size,
-                                              VkDevice device, VmaAllocator vma_allocator,
-                                              VkCommandPool command_pool, VkQueue queue) {
-  VkBuffer buffer;
-  auto allocation = CreateBuffer(buffer, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | T::kBufferBit,
-                                 VMA_MEMORY_USAGE_GPU_ONLY, vma_allocator);
-
-  {
-    VkBuffer staging_buffer;
-    auto staging_allocation = CreateBuffer(staging_buffer, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                           VMA_MEMORY_USAGE_CPU_ONLY, vma_allocator);
-
-    void *data;
-    CHECK_VK_SUCCESS(vmaMapMemory(vma_allocator, staging_allocation, &data));
-    memcpy(data, buffer_data, static_cast<size_t>(buffer_size));
-    vmaUnmapMemory(vma_allocator, staging_allocation);
-    CopyBuffer(staging_buffer, buffer, buffer_size, device, command_pool, queue);
-
-    vmaDestroyBuffer(vma_allocator, staging_buffer, staging_allocation);
-  }
-
-  return std::make_shared<T>(buffer, vma_allocator, allocation, buffer_size);
+  return std::pair(allocation, allocation_info);
 }
 
 }  // namespace
 
-std::shared_ptr<Buffer> RenderCore::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                                                 VmaMemoryUsage memory_usage) {
+std::shared_ptr<Buffer> RenderCore::CreateBuffer(const CreateBufferInfo &crate_info) {
   VkBuffer buffer;
-  auto allocation = ::vre::rendering::CreateBuffer(buffer, size, usage, memory_usage, vma_allocator_);
+  auto [allocation, allocation_info] = CreateBufferImpl(buffer, crate_info.buffer_size, crate_info.usage,
+                                                        crate_info.memory_usage, vma_allocator_);
 
-  return std::make_shared<Buffer>(buffer, vma_allocator_, allocation, size);
-}
+  if (crate_info.initial_data != nullptr) {
+    if (allocation_info.pMappedData == nullptr) {
+      VkBuffer staging_buffer;
+      auto [staging_allocation, staging_allocation_info] =
+          CreateBufferImpl(staging_buffer, crate_info.buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                           VMA_MEMORY_USAGE_CPU_ONLY, vma_allocator_);
+      VR_CHECK(staging_allocation_info.pMappedData);
+      memcpy(staging_allocation_info.pMappedData, crate_info.initial_data,
+             static_cast<size_t>(crate_info.buffer_size));
+      CopyBuffer(staging_buffer, buffer, crate_info.buffer_size, device_, command_pool_, graphics_queue_);
 
-std::shared_ptr<rendering::IndexBuffer> RenderCore::CreateIndexBuffer(const std::vector<uint32_t> &indices) {
-  return CrateBufferThroughtStaging<rendering::IndexBuffer>(reinterpret_cast<const void *>(indices.data()),
-                                                            sizeof(indices[0]) * indices.size(), device_,
-                                                            vma_allocator_, command_pool_, graphics_queue_);
-}
+      vmaDestroyBuffer(vma_allocator_, staging_buffer, staging_allocation);
+    } else {
+      memcpy(allocation_info.pMappedData, crate_info.initial_data, crate_info.buffer_size);
+    }
+  }
 
-std::shared_ptr<rendering::VertexBuffer> RenderCore::CreateVertexBuffer(
-    const std::vector<glm::vec3> &vertexes) {
-  return CrateBufferThroughtStaging<rendering::VertexBuffer>(
-      reinterpret_cast<const void *>(vertexes.data()), vertexes.size() * sizeof(vertexes.front()), device_,
-      vma_allocator_, command_pool_, graphics_queue_);
-}
-
-std::shared_ptr<UniformBuffer> RenderCore::CreateUniformBuffer(const VkDeviceSize size) {
-  VkBuffer buffer;
-  auto allocation = ::vre::rendering::CreateBuffer(buffer, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                   VMA_MEMORY_USAGE_CPU_ONLY, vma_allocator_);
-
-  return std::make_shared<UniformBuffer>(buffer, vma_allocator_, allocation, size);
+  return std::make_shared<Buffer>(buffer, vma_allocator_, allocation, crate_info.buffer_size,
+                                  allocation_info);
 }
 
 }  // namespace vre::rendering

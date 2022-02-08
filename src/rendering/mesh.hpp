@@ -31,8 +31,8 @@ class Mesh {
   std::vector<glm::vec3> pos_;
   std::vector<uint32_t> indicies_;
 
-  std::shared_ptr<IndexBuffer> index_buffer_;
-  std::shared_ptr<VertexBuffer> vertex_buffer_;
+  std::shared_ptr<Buffer> index_buffer_;
+  std::shared_ptr<Buffer> vertex_buffer_;
   std::shared_ptr<Material> material_;
 };
 

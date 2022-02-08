@@ -1,6 +1,8 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
 #include "common.hpp"
+#include "vk_mem_alloc.h"
 
 namespace vre {
 
@@ -8,18 +10,31 @@ class Application;
 
 namespace rendering {
 
+struct CreateBufferInfo {
+  VkDeviceSize buffer_size{0};
+
+  VkBufferUsageFlags usage{0};
+  VmaMemoryUsage memory_usage{VMA_MEMORY_USAGE_UNKNOWN};
+
+  const void *initial_data = nullptr;
+};
+
 // TODO(dmitrygladky): destructors
 class Buffer {
  public:
-  Buffer(VkBuffer buffer, VmaAllocator vma_allocator, VmaAllocation vma_allocation, VkDeviceSize size)
-      : buffer_(buffer), vma_allocator_(vma_allocator), vma_allocation_(vma_allocation), size_(size) {}
+  static constexpr VkBufferUsageFlagBits kBufferBit = static_cast<VkBufferUsageFlagBits>(0);
 
-  // TODO: bind memory on creation if possible
+  Buffer(VkBuffer buffer, VmaAllocator vma_allocator, VmaAllocation vma_allocation, VkDeviceSize size,
+         VmaAllocationInfo allocation_info)
+      : buffer_(buffer),
+        vma_allocator_(vma_allocator),
+        vma_allocation_(vma_allocation),
+        size_(size),
+        allocation_info_(allocation_info) {}
+
   void Update(const void *data) {
-    void *buffer_data = nullptr;
-    CHECK_VK_SUCCESS(vmaMapMemory(vma_allocator_, vma_allocation_, &buffer_data));
-    memcpy(buffer_data, data, size_);
-    vmaUnmapMemory(vma_allocator_, vma_allocation_);
+    VR_ASSERT(allocation_info_.pMappedData);
+    memcpy(allocation_info_.pMappedData, data, size_);
   }
 
   [[nodiscard]] VkDeviceSize GetSize() const { return size_; }
@@ -30,31 +45,8 @@ class Buffer {
   VmaAllocator vma_allocator_;
   VmaAllocation vma_allocation_;
   VkDeviceSize size_;
-};
 
-class IndexBuffer : public Buffer {
- public:
-  using Buffer::Buffer;
-
-  static constexpr VkBufferUsageFlagBits kBufferBit = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-};
-
-class VertexBuffer : public Buffer {
- public:
-  using Buffer::Buffer;
-
-  static constexpr VkBufferUsageFlagBits kBufferBit = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-};
-
-class UniformBuffer : public Buffer {
- public:
-  using Buffer::Buffer;
-
-  static constexpr VkBufferUsageFlagBits kBufferBit = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-};
-
-struct Vertex {
-  glm::vec3 pos_;
+  VmaAllocationInfo allocation_info_;
 };
 
 }  // namespace rendering

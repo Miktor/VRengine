@@ -12,8 +12,11 @@ UniformBufferPoolAllocator::UniformBufferPoolAllocator(RenderCore &render_core, 
 UniformBufferAllocation UniformBufferPoolAllocator::Allocate(VkDeviceSize minimum_size) {
   VR_ASSERT(minimum_size <= block_size_);
 
-  VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  auto buffer = render_core_.CreateBuffer(minimum_size, usage, VMA_MEMORY_USAGE_GPU_ONLY);
+  CreateBufferInfo create_info{};
+  create_info.buffer_size = minimum_size;
+  create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  create_info.memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  auto buffer = render_core_.CreateBuffer(create_info);
 
   UniformBufferAllocation allocation;
 

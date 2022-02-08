@@ -38,11 +38,23 @@ void Mesh::AddPrimitive(std::vector<glm::vec3> vert, const std::vector<uint32_t>
 
 void Mesh::InitializeVulkan(RenderCore &renderer) {
   if (!pos_.empty()) {
-    vertex_buffer_ = renderer.CreateVertexBuffer(pos_);
+    CreateBufferInfo create_info{};
+    create_info.buffer_size = pos_.size() * sizeof(glm::vec3);
+    create_info.initial_data = pos_.data();
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    create_info.memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+    vertex_buffer_ = renderer.CreateBuffer(create_info);
   }
 
   if (!indicies_.empty()) {
-    index_buffer_ = renderer.CreateIndexBuffer(indicies_);
+    CreateBufferInfo create_info{};
+    create_info.buffer_size = indicies_.size() * sizeof(uint32_t);
+    create_info.initial_data = indicies_.data();
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    create_info.memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+    index_buffer_ = renderer.CreateBuffer(create_info);
   }
 
   material_ = GetDefaultMaterial(renderer.GetDevice());

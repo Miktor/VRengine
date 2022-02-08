@@ -1,5 +1,6 @@
 #include "rendering/buffers.hpp"
 #include <vulkan/vulkan_core.h>
+#include <cstddef>
 #include <tuple>
 
 #include "helpers.hpp"
@@ -45,7 +46,7 @@ void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size, VkD
 }
 
 auto CreateBufferImpl(VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage,
-                      VmaMemoryUsage memory_usage, VmaAllocator vma_allocator) {
+                      VmaMemoryUsage memory_usage, VmaAllocator vma_allocator, VmaPool vma_pool) {
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.size = size;
@@ -55,6 +56,7 @@ auto CreateBufferImpl(VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags us
   VmaAllocationCreateInfo alloc_info = {};
   alloc_info.usage = memory_usage;
   alloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  alloc_info.pool = vma_pool;
 
   VmaAllocation allocation;
   VmaAllocationInfo allocation_info;
@@ -68,15 +70,16 @@ auto CreateBufferImpl(VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags us
 
 std::shared_ptr<Buffer> RenderCore::CreateBuffer(const CreateBufferInfo &crate_info) {
   VkBuffer buffer;
-  auto [allocation, allocation_info] = CreateBufferImpl(buffer, crate_info.buffer_size, crate_info.usage,
-                                                        crate_info.memory_usage, vma_allocator_);
+  auto [allocation, allocation_info] =
+      CreateBufferImpl(buffer, crate_info.buffer_size, crate_info.usage, crate_info.memory_usage,
+                       vma_allocator_, crate_info.pool);
 
   if (crate_info.initial_data != nullptr) {
     if (allocation_info.pMappedData == nullptr) {
       VkBuffer staging_buffer;
       auto [staging_allocation, staging_allocation_info] =
           CreateBufferImpl(staging_buffer, crate_info.buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                           VMA_MEMORY_USAGE_CPU_ONLY, vma_allocator_);
+                           VMA_MEMORY_USAGE_CPU_ONLY, vma_allocator_, nullptr);
       VR_CHECK(staging_allocation_info.pMappedData);
       memcpy(staging_allocation_info.pMappedData, crate_info.initial_data,
              static_cast<size_t>(crate_info.buffer_size));

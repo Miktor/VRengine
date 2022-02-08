@@ -87,7 +87,6 @@ void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buff
   resource_binding.buffer = buffer.GetBuffer();
 }
 
-void BindDescriptorSet(uint8_t set, VkDescriptorSet descriptor_set);
 void CommandBuffer::BindMaterial(const Material &material) { state_.material = &material; }
 
 void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index,

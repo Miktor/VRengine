@@ -3,6 +3,7 @@
 #include "common.hpp"
 
 #include "rendering/buffers.hpp"
+#include "vk_mem_alloc.h"
 
 namespace vre::rendering {
 
@@ -20,11 +21,15 @@ class UniformBufferPoolAllocator {
  public:
   UniformBufferPoolAllocator(RenderCore &render_core, VkDeviceSize block_size, VkDeviceSize alignment,
                              VkBufferUsageFlags usage);
-
+  ~UniformBufferPoolAllocator();
+  
   UniformBufferAllocation Allocate(VkDeviceSize minimum_size);
 
  private:
   RenderCore &render_core_;
+
+  VmaPool pool_;
+
   VkDeviceSize block_size_;
   VkDeviceSize alignment_;
   VkBufferUsageFlags usage_;

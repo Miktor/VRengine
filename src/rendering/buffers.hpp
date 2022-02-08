@@ -4,17 +4,15 @@
 #include "common.hpp"
 #include "vk_mem_alloc.h"
 
-namespace vre {
-
-class Application;
-
-namespace rendering {
+namespace vre::rendering {
 
 struct CreateBufferInfo {
   VkDeviceSize buffer_size{0};
 
   VkBufferUsageFlags usage{0};
   VmaMemoryUsage memory_usage{VMA_MEMORY_USAGE_UNKNOWN};
+
+  VmaPool pool;
 
   const void *initial_data = nullptr;
 };
@@ -49,5 +47,4 @@ class Buffer {
   VmaAllocationInfo allocation_info_;
 };
 
-}  // namespace rendering
-}  // namespace vre
+}  // namespace vre::rendering

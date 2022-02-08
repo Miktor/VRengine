@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "vk_mem_alloc.h"
+
 #include "common.hpp"
 #include "rendering/buffers.hpp"
 #include "rendering/command_buffer.hpp"
@@ -85,6 +87,7 @@ class RenderCore {
   void InitVulkan(GLFWwindow *window);
 
   VkDevice GetDevice() { return device_; }
+  VmaAllocator GetVmaAllocator() { return vma_allocator_; }
 
   void Cleanup();
   void CleanupSwapChain();

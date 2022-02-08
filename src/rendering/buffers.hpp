@@ -11,24 +11,25 @@ namespace rendering {
 // TODO(dmitrygladky): destructors
 class Buffer {
  public:
-  Buffer(VkDevice device, VkBuffer buffer, VkDeviceMemory buffer_memory, VkDeviceSize size)
-      : device_(device), buffer_(buffer), buffer_memory_(buffer_memory), size_(size) {}
+  Buffer(VkBuffer buffer, VmaAllocator vma_allocator, VmaAllocation vma_allocation, VkDeviceSize size)
+      : buffer_(buffer), vma_allocator_(vma_allocator), vma_allocation_(vma_allocation), size_(size) {}
 
+  // TODO: bind memory on creation if possible
   void Update(const void *data) {
     void *buffer_data = nullptr;
-    vkMapMemory(device_, buffer_memory_, 0, size_, 0, &buffer_data);
+    CHECK_VK_SUCCESS(vmaMapMemory(vma_allocator_, vma_allocation_, &buffer_data));
     memcpy(buffer_data, data, size_);
-    vkUnmapMemory(device_, buffer_memory_);
+    vmaUnmapMemory(vma_allocator_, vma_allocation_);
   }
 
   [[nodiscard]] VkDeviceSize GetSize() const { return size_; }
   [[nodiscard]] VkBuffer GetBuffer() const { return buffer_; }
 
  private:
-  VkDevice device_;
-  VkDeviceSize size_;
   VkBuffer buffer_;
-  VkDeviceMemory buffer_memory_;
+  VmaAllocator vma_allocator_;
+  VmaAllocation vma_allocation_;
+  VkDeviceSize size_;
 };
 
 class IndexBuffer : public Buffer {

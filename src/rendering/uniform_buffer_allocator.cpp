@@ -1,6 +1,7 @@
 #include "uniform_buffer_allocator.hpp"
 
 #include "rendering/render_core.hpp"
+#include "vk_mem_alloc.h"
 
 namespace vre::rendering {
 
@@ -12,7 +13,7 @@ UniformBufferAllocation UniformBufferPoolAllocator::Allocate(VkDeviceSize minimu
   VR_ASSERT(minimum_size <= block_size_);
 
   VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  auto buffer = render_core_.CreateBuffer(minimum_size, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  auto buffer = render_core_.CreateBuffer(minimum_size, usage, VMA_MEMORY_USAGE_GPU_ONLY);
 
   UniformBufferAllocation allocation;
 

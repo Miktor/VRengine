@@ -1,6 +1,8 @@
 #include "rendering/buffers.hpp"
+#include <vulkan/vulkan_core.h>
 
 #include "rendering/render_core.hpp"
+#include "vk_mem_alloc.h"
 
 namespace vre::rendering {
 
@@ -56,110 +58,77 @@ uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties,
 }
 
 // TODO: delete
-void CreateBuffer(VkBuffer &buffer, VkDeviceMemory &buffer_memory, VkDeviceSize size,
-                  VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkDevice device,
-                  VkPhysicalDevice physical_device) {
+VmaAllocation CreateBuffer(VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage,
+                           VmaMemoryUsage memory_usage, VmaAllocator vma_allocator) {
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.size = size;
   buffer_info.usage = usage;
   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-  if (vkCreateBuffer(device, &buffer_info, nullptr, &buffer) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create buffer!");
-  }
+  VmaAllocationCreateInfo alloc_info = {};
+  alloc_info.usage = memory_usage;
 
-  VkMemoryRequirements mem_requirements;
-  vkGetBufferMemoryRequirements(device, buffer, &mem_requirements);
+  VmaAllocation allocation;
+  CHECK_VK_SUCCESS(vmaCreateBuffer(vma_allocator, &buffer_info, &alloc_info, &buffer, &allocation, nullptr));
 
-  VkMemoryAllocateInfo alloc_info{};
-  alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  alloc_info.allocationSize = mem_requirements.size;
-  alloc_info.memoryTypeIndex = FindMemoryType(mem_requirements.memoryTypeBits, properties, physical_device);
-
-  if (vkAllocateMemory(device, &alloc_info, nullptr, &buffer_memory) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate buffer memory!");
-  }
-
-  vkBindBufferMemory(device, buffer, buffer_memory, 0);
+  return allocation;
 }
 
 template <typename T>
 std::shared_ptr<T> CrateBufferThroughtStaging(const void *buffer_data, VkDeviceSize buffer_size,
-                                              VkDevice device, VkPhysicalDevice physical_device,
+                                              VkDevice device, VmaAllocator vma_allocator,
                                               VkCommandPool command_pool, VkQueue queue) {
-  VkBuffer staging_buffer;
-  VkDeviceMemory staging_buffer_memory;
-  CreateBuffer(staging_buffer, staging_buffer_memory, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, device,
-               physical_device);
-
-  void *data;
-  vkMapMemory(device, staging_buffer_memory, 0, buffer_size, 0, &data);
-  memcpy(data, buffer_data, static_cast<size_t>(buffer_size));
-  vkUnmapMemory(device, staging_buffer_memory);
-
   VkBuffer buffer;
-  VkDeviceMemory buffer_memory;
-  CreateBuffer(buffer, buffer_memory, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | T::kBufferBit,
-               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, device, physical_device);
+  auto allocation = CreateBuffer(buffer, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | T::kBufferBit,
+                                 VMA_MEMORY_USAGE_GPU_ONLY, vma_allocator);
 
-  CopyBuffer(staging_buffer, buffer, buffer_size, device, command_pool, queue);
+  {
+    VkBuffer staging_buffer;
+    auto staging_allocation = CreateBuffer(staging_buffer, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                           VMA_MEMORY_USAGE_CPU_ONLY, vma_allocator);
 
-  vkDestroyBuffer(device, staging_buffer, nullptr);
-  vkFreeMemory(device, staging_buffer_memory, nullptr);
+    void *data;
+    CHECK_VK_SUCCESS(vmaMapMemory(vma_allocator, staging_allocation, &data));
+    memcpy(data, buffer_data, static_cast<size_t>(buffer_size));
+    vmaUnmapMemory(vma_allocator, staging_allocation);
+    CopyBuffer(staging_buffer, buffer, buffer_size, device, command_pool, queue);
 
-  return std::make_shared<T>(device, buffer, buffer_memory, buffer_size);
+    vmaDestroyBuffer(vma_allocator, staging_buffer, staging_allocation);
+  }
+
+  return std::make_shared<T>(buffer, vma_allocator, allocation, buffer_size);
 }
 
 }  // namespace
 
 std::shared_ptr<Buffer> RenderCore::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                                                 VkMemoryPropertyFlags properties) {
-  VkBufferCreateInfo buffer_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-  buffer_info.size = size;
-  buffer_info.usage = usage;
-  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+                                                 VmaMemoryUsage memory_usage) {
+  VkBuffer buffer;
+  auto allocation = ::vre::rendering::CreateBuffer(buffer, size, usage, memory_usage, vma_allocator_);
 
-  VkBuffer vk_buffer;
-  CHECK_VK_SUCCESS(vkCreateBuffer(device_, &buffer_info, nullptr, &vk_buffer));
-
-  VkMemoryRequirements mem_requirements;
-  vkGetBufferMemoryRequirements(device_, vk_buffer, &mem_requirements);
-
-  VkMemoryAllocateInfo alloc_info{};
-  alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  alloc_info.allocationSize = mem_requirements.size;
-  alloc_info.memoryTypeIndex = FindMemoryType(mem_requirements.memoryTypeBits, properties, physical_device_);
-
-  VkDeviceMemory buffer_memory;
-  CHECK_VK_SUCCESS(vkAllocateMemory(device_, &alloc_info, nullptr, &buffer_memory));
-
-  return std::make_shared<Buffer>(device_, vk_buffer, buffer_memory, size);
+  return std::make_shared<Buffer>(buffer, vma_allocator_, allocation, size);
 }
 
 std::shared_ptr<rendering::IndexBuffer> RenderCore::CreateIndexBuffer(const std::vector<uint32_t> &indices) {
   return CrateBufferThroughtStaging<rendering::IndexBuffer>(reinterpret_cast<const void *>(indices.data()),
                                                             sizeof(indices[0]) * indices.size(), device_,
-                                                            physical_device_, command_pool_, graphics_queue_);
+                                                            vma_allocator_, command_pool_, graphics_queue_);
 }
 
 std::shared_ptr<rendering::VertexBuffer> RenderCore::CreateVertexBuffer(
     const std::vector<glm::vec3> &vertexes) {
   return CrateBufferThroughtStaging<rendering::VertexBuffer>(
       reinterpret_cast<const void *>(vertexes.data()), vertexes.size() * sizeof(vertexes.front()), device_,
-      physical_device_, command_pool_, graphics_queue_);
+      vma_allocator_, command_pool_, graphics_queue_);
 }
 
 std::shared_ptr<UniformBuffer> RenderCore::CreateUniformBuffer(const VkDeviceSize size) {
   VkBuffer buffer;
-  VkDeviceMemory buffer_memory;
+  auto allocation = ::vre::rendering::CreateBuffer(buffer, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                                   VMA_MEMORY_USAGE_CPU_ONLY, vma_allocator_);
 
-  ::vre::rendering::CreateBuffer(buffer, buffer_memory, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                 device_, physical_device_);
-
-  return std::make_shared<UniformBuffer>(device_, buffer, buffer_memory, size);
+  return std::make_shared<UniformBuffer>(buffer, vma_allocator_, allocation, size);
 }
 
 VkVertexInputBindingDescription Vertex::GetBindingDescription() {

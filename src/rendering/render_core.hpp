@@ -90,7 +90,7 @@ class RenderCore {
   void CleanupSwapChain();
 
   std::shared_ptr<Buffer> CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                                       VkMemoryPropertyFlags properties);
+                                       VmaMemoryUsage memory_usage);
   std::shared_ptr<IndexBuffer> CreateIndexBuffer(const std::vector<uint32_t> &indices);
   std::shared_ptr<VertexBuffer> CreateVertexBuffer(const std::vector<glm::vec3> &vertexes);
   std::shared_ptr<UniformBuffer> CreateUniformBuffer(const VkDeviceSize size);

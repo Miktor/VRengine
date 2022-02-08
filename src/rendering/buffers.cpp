@@ -131,25 +131,4 @@ std::shared_ptr<UniformBuffer> RenderCore::CreateUniformBuffer(const VkDeviceSiz
   return std::make_shared<UniformBuffer>(buffer, vma_allocator_, allocation, size);
 }
 
-VkVertexInputBindingDescription Vertex::GetBindingDescription() {
-  VkVertexInputBindingDescription binding_description{};
-
-  binding_description.binding = 0;
-  binding_description.stride = sizeof(Vertex);
-  binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-  return binding_description;
-}
-
-std::vector<VkVertexInputAttributeDescription> Vertex::GetAttributeDescriptions() {
-  std::vector<VkVertexInputAttributeDescription> attribute_descriptions(1);
-
-  attribute_descriptions[0].binding = 0;
-  attribute_descriptions[0].location = 0;
-  attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-  attribute_descriptions[0].offset = offsetof(Vertex, pos_);
-
-  return attribute_descriptions;
-}
-
 }  // namespace vre::rendering

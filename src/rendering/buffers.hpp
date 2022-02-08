@@ -55,9 +55,6 @@ class UniformBuffer : public Buffer {
 
 struct Vertex {
   glm::vec3 pos_;
-
-  static VkVertexInputBindingDescription GetBindingDescription();
-  static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
 };
 
 }  // namespace rendering

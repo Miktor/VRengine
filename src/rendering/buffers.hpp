@@ -20,19 +20,23 @@ struct CreateBufferInfo {
 // TODO(dmitrygladky): destructors
 class Buffer {
  public:
-  static constexpr VkBufferUsageFlagBits kBufferBit = static_cast<VkBufferUsageFlagBits>(0);
-
   Buffer(VkBuffer buffer, VmaAllocator vma_allocator, VmaAllocation vma_allocation, VkDeviceSize size,
          VmaAllocationInfo allocation_info)
       : buffer_(buffer),
         vma_allocator_(vma_allocator),
         vma_allocation_(vma_allocation),
         size_(size),
-        allocation_info_(allocation_info) {}
+        allocation_info_(allocation_info) {
+  }
 
   void Update(const void *data) {
     VR_ASSERT(allocation_info_.pMappedData);
     memcpy(allocation_info_.pMappedData, data, size_);
+  }
+
+  [[nodiscard]] void *GetMappedData() const {
+    VR_ASSERT(allocation_info_.pMappedData);
+    return allocation_info_.pMappedData;
   }
 
   [[nodiscard]] VkDeviceSize GetSize() const { return size_; }

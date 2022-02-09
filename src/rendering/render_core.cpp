@@ -5,14 +5,15 @@
 #include <tuple>
 
 #include <vulkan/vulkan_core.h>
+#include "vk_mem_alloc.h"
 
-#include "buffers.hpp"
 #include "common.hpp"
 #include "helpers.hpp"
 #include "platform/platform.hpp"
+#include "rendering/buffers.hpp"
 #include "rendering/image.hpp"
-#include "shader.hpp"
-#include "vk_mem_alloc.h"
+#include "rendering/shader.hpp"
+#include "rendering/uniform_buffer_allocator.hpp"
 
 namespace vre::rendering {
 
@@ -546,6 +547,8 @@ void InitVMA(VmaAllocator &allocator, VkInstance instance, VkPhysicalDevice phys
 
 }  // namespace
 
+RenderCore::RenderCore() {}
+
 void RenderCore::InitVulkan(GLFWwindow *window) {
   instance_ = CreateInstance();
   debug_messenger_ = SetupDebugMessenger(instance_);
@@ -556,6 +559,9 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
   device_ = device;
 
   InitVMA(vma_allocator_, instance_, physical_device_, device_);
+
+  ubo_allocator_ =
+      std::make_unique<UniformBufferPoolAllocator>(*this, 256 * 1024, 16, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
   vkGetDeviceQueue(device_, indices.graphics_family.value(), 0, &graphics_queue_);
   vkGetDeviceQueue(device_, indices.present_family.value(), 0, &present_queue_);
@@ -833,4 +839,5 @@ void RenderCore::Present(RenderContext &context) {
 
 void RenderCore::WaitDeviceIdle() { vkDeviceWaitIdle(device_); }
 
+UniformBufferPoolAllocator &RenderCore::GetUniformBufferPoolAllocator() { return *ubo_allocator_; }
 }  // namespace vre::rendering

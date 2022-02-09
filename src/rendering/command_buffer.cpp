@@ -1,10 +1,9 @@
 #include "command_buffer.hpp"
 
-#include <vulkan/vulkan_core.h>
-
 #include "helpers.hpp"
 #include "rendering/render_core.hpp"
 #include "rendering/shader.hpp"
+#include "rendering/uniform_buffer_allocator.hpp"
 
 namespace vre::rendering {
 
@@ -82,9 +81,27 @@ void CommandBuffer::BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, V
   vkCmdBindIndexBuffer(command_buffer_, buffer.GetBuffer(), offset, index_type);
 }
 
-void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer) {
-  auto &resource_binding = state_.resource_bindings_[set][binding];
+void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer,
+                                      const VkDeviceSize offset, const VkDeviceSize size) {
+  auto &resource_binding = state_.resource_bindings[set][binding];
   resource_binding.buffer = buffer.GetBuffer();
+  resource_binding.offset = offset;
+  resource_binding.size = size;
+}
+
+void CommandBuffer::AllocateUniformBuffer(uint32_t set, uint32_t binding, const VkDeviceSize size,
+                                          const void *data) {
+  VR_ASSERT(data);
+
+  if (ubo_allocated_data_ == nullptr) {
+    auto &allocator = core_->GetUniformBufferPoolAllocator();
+    ubo_allocated_data_ = allocator.Allocate(size);
+  }
+
+  auto allocation = ubo_allocated_data_->Allocate(size);
+  BindUniformBuffer(set, binding, ubo_allocated_data_->GetBuffer(), allocation.offset, allocation.size);
+
+  memcpy(ubo_allocated_data_->GetBuffer().GetMappedData(), data, size);
 }
 
 void CommandBuffer::BindMaterial(const Material &material) { state_.material = &material; }

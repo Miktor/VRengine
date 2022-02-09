@@ -9,6 +9,7 @@
 #include "rendering/pipeline.hpp"
 #include "rendering/render_pass.hpp"
 #include "rendering/shader.hpp"
+#include "rendering/uniform_buffer_allocator.hpp"
 
 namespace vre::rendering {
 
@@ -22,6 +23,8 @@ struct BeginRenderInfo {
 
 struct ResourceBinding {
   VkBuffer buffer;
+  VkDeviceSize offset;
+  VkDeviceSize size;
 };
 
 using SetResourceBindings = std::unordered_map<uint8_t, ResourceBinding>;
@@ -35,7 +38,7 @@ struct GraphicsState {
   std::unordered_map<uint32_t, VkDescriptorSet> descriptor_sets;
   const Material *material = nullptr;
 
-  ResourceBindings resource_bindings_;
+  ResourceBindings resource_bindings;
 };
 
 class CommandBuffer {
@@ -61,7 +64,10 @@ class CommandBuffer {
   void BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset, VkDeviceSize stride,
                          VkVertexInputRate step_rate);
   void BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, VkIndexType index_type);
-  void BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer);
+  void BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer, const VkDeviceSize offset,
+                         const VkDeviceSize size);
+
+  void AllocateUniformBuffer(uint32_t set, uint32_t binding, const VkDeviceSize size, const void *data);
 
   void BindMaterial(const Material &material);
 
@@ -69,10 +75,11 @@ class CommandBuffer {
                    uint32_t first_instance);
 
  private:
-  RenderCore *core_;
+  RenderCore *core_ = nullptr;
   VkCommandBuffer command_buffer_;
 
   GraphicsState state_;
+  std::shared_ptr<UniformBufferAllocation> ubo_allocated_data_ = nullptr;
 
  private:
   void BindDescriptorSet(uint32_t set);

@@ -1,17 +1,14 @@
 #pragma once
 
 #include <memory>
-
-#include <vulkan/vulkan_core.h>
-
-#include "vk_mem_alloc.h"
-
 #include "common.hpp"
+
 #include "rendering/buffers.hpp"
 #include "rendering/command_buffer.hpp"
 #include "rendering/image.hpp"
 #include "rendering/pipeline.hpp"
 #include "rendering/render_pass.hpp"
+#include "rendering/uniform_buffer_allocator.hpp"
 
 namespace vre::rendering {
 
@@ -83,7 +80,11 @@ class RenderCore {
   size_t current_frame_ = 0;
   uint32_t next_image_index_ = 0;
 
+  std::unique_ptr<UniformBufferPoolAllocator> ubo_allocator_;
+
  public:
+  RenderCore();
+
   void InitVulkan(GLFWwindow *window);
 
   VkDevice GetDevice() { return device_; }
@@ -92,6 +93,7 @@ class RenderCore {
   void Cleanup();
   void CleanupSwapChain();
 
+  UniformBufferPoolAllocator &GetUniformBufferPoolAllocator();
   std::shared_ptr<Buffer> CreateBuffer(const CreateBufferInfo &crate_info);
 
   RenderContext BeginDraw();

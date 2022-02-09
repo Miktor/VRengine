@@ -72,11 +72,14 @@ void Mesh::Render(rendering::RenderContext &context) {
     data.model = glm::mat4(1.0F);
     data.view = context.render_data.camera_view;
     data.proj = context.render_data.camera_projection;
+
+    context.command_buffer.AllocateUniformBuffer(0, 0, sizeof(data), &data);
+
     context.uniform_buffer->Update(&data);
   }
 
-  context.command_buffer.BindUniformBuffer(0, 0, *context.uniform_buffer);
-
+  context.command_buffer.BindUniformBuffer(0, 0, *context.uniform_buffer, 0, sizeof(UniformBufferObject));
+  
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {
     context.command_buffer.DrawIndexed(static_cast<uint32_t>(primitive.index_count), 1, 0, 0, 0);

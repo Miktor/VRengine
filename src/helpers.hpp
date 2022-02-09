@@ -1,12 +1,19 @@
 #pragma once
 
+#include <execinfo.h>
+#include <unistd.h>
+
 #ifndef NDEBUG
-#define VR_ASSERT(x)                            \
-  do {                                          \
-    if (!bool(x)) {                             \
-      SPDLOG_ERROR("Assertion failed: {}", #x); \
-      abort();                                  \
-    }                                           \
+#define VR_ASSERT(x)                                    \
+  do {                                                  \
+    if (!bool(x)) {                                     \
+      SPDLOG_ERROR("Assertion failed: {}", #x);         \
+      void *array[10];                                  \
+      size_t size;                                      \
+      size = backtrace(array, 10);                      \
+      backtrace_symbols_fd(array, size, STDERR_FILENO); \
+      abort();                                          \
+    }                                                   \
   } while (0)
 #else
 #define VR_ASSERT(x) ((void)0)

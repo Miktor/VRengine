@@ -114,12 +114,16 @@ void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, u
 }
 
 void CommandBuffer::BindDescriptorSet(uint32_t set) {
-  const auto &descriptor_sets = state_.descriptor_sets;
-  VR_ASSERT(descriptor_sets.find(set) != descriptor_sets.end());
+  VR_ASSERT(state_.material);
 
-  vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          state_.material->GetPipelineLayout().GetPipelineLayout(), set, 1,
-                          &descriptor_sets.find(set)->second, 0, nullptr);
+  const auto &pipeline_layout = state_.material->GetPipelineLayout();
+  if (const auto &descriptor_sets = state_.descriptor_sets;
+      descriptor_sets.find(set) != descriptor_sets.end()) {
+    vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            pipeline_layout.GetPipelineLayout(), set, 1, &descriptor_sets.find(set)->second,
+                            0, nullptr);
+    return;
+  }
 }
 
 VkPipeline CommandBuffer::BuildGraphicsPipeline() {

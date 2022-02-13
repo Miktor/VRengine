@@ -438,84 +438,6 @@ std::vector<VkCommandBuffer> AllocateCommandBuffers(uint8_t count, VkDevice devi
   return command_buffers;
 }
 
-VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice device) {
-  VkDescriptorSetLayoutBinding ubo_layout_binding{};
-  ubo_layout_binding.binding = 0;
-  ubo_layout_binding.descriptorCount = 1;
-  ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  ubo_layout_binding.pImmutableSamplers = nullptr;
-  ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-  VkDescriptorSetLayoutCreateInfo layout_info{};
-  layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layout_info.bindingCount = 1;
-  layout_info.pBindings = &ubo_layout_binding;
-
-  VkDescriptorSetLayout descriptor_set_layout;
-  if (vkCreateDescriptorSetLayout(device, &layout_info, nullptr, &descriptor_set_layout) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor set layout!");
-  }
-
-  return descriptor_set_layout;
-}
-
-VkDescriptorPool CreateDescriptorPool(const size_t count, VkDevice device) {
-  VkDescriptorPoolSize pool_size{};
-  pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  pool_size.descriptorCount = static_cast<uint32_t>(count);
-
-  VkDescriptorPoolCreateInfo pool_info{};
-  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  pool_info.poolSizeCount = 1;
-  pool_info.pPoolSizes = &pool_size;
-  pool_info.maxSets = static_cast<uint32_t>(count);
-
-  VkDescriptorPool descriptor_pool;
-  if (vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptor_pool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
-  }
-
-  return descriptor_pool;
-}
-
-std::vector<VkDescriptorSet> CreateDescriptorSets(
-    const uint32_t count, VkDevice device, VkDescriptorPool descriptor_pool,
-    VkDescriptorSetLayout descriptor_set_layout,
-    const std::vector<std::shared_ptr<Buffer>> &uniform_buffers) {
-  std::vector<VkDescriptorSetLayout> layouts(count, descriptor_set_layout);
-  VkDescriptorSetAllocateInfo alloc_info{};
-  alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  alloc_info.descriptorPool = descriptor_pool;
-  alloc_info.descriptorSetCount = count;
-  alloc_info.pSetLayouts = layouts.data();
-
-  std::vector<VkDescriptorSet> descriptor_sets;
-  descriptor_sets.resize(count);
-  if (vkAllocateDescriptorSets(device, &alloc_info, descriptor_sets.data()) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate descriptor sets!");
-  }
-
-  for (size_t i = 0; i < count; i++) {
-    VkDescriptorBufferInfo buffer_info{};
-    buffer_info.buffer = uniform_buffers[i]->GetBuffer();
-    buffer_info.offset = 0;
-    buffer_info.range = sizeof(UniformBufferObject);
-
-    VkWriteDescriptorSet descriptor_write{};
-    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_write.dstSet = descriptor_sets[i];
-    descriptor_write.dstBinding = 0;
-    descriptor_write.dstArrayElement = 0;
-    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptor_write.descriptorCount = 1;
-    descriptor_write.pBufferInfo = &buffer_info;
-
-    vkUpdateDescriptorSets(device, 1, &descriptor_write, 0, nullptr);
-  }
-
-  return descriptor_sets;
-}
-
 RenderPassInfo CreateDefaultRenderPass(ImageViewPtr image_view) {
   RenderPassInfo info;
   info.color_attachments.push_back(image_view);
@@ -569,28 +491,10 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
   CreateSwapChain(window, indices);
   CreateImageViews();
 
-  descriptor_set_layout_ = CreateDescriptorSetLayout(device_);
-
   command_pool_ = CreateCommandPool(device, indices);
 
   CreateSyncObjects();
   command_buffers_ = AllocateCommandBuffers(backbuffers_.size(), device, command_pool_);
-
-  {
-    CreateBufferInfo create_info{};
-    create_info.buffer_size = sizeof(UniformBufferObject);
-    create_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    create_info.memory_usage = VMA_MEMORY_USAGE_CPU_ONLY;
-
-    uniform_buffers_.reserve(swap_chain_images_.size());
-    for (size_t i = 0; i < swap_chain_images_.size(); i++) {
-      uniform_buffers_.push_back(CreateBuffer(create_info));
-    }
-  }
-
-  descriptor_pool_ = CreateDescriptorPool(swap_chain_images_.size(), device_);
-  descriptor_sets_ = CreateDescriptorSets(swap_chain_images_.size(), device_, descriptor_pool_,
-                                          descriptor_set_layout_, uniform_buffers_);
 }
 
 void RenderCore::CleanupSwapChain() {
@@ -602,8 +506,6 @@ void RenderCore::CleanupSwapChain() {
 
 void RenderCore::Cleanup() {
   CleanupSwapChain();
-
-  vkDestroyDescriptorSetLayout(device_, descriptor_set_layout_, nullptr);
 
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
     vkDestroySemaphore(device_, render_finished_semaphores_[i], nullptr);
@@ -747,7 +649,6 @@ RenderContext RenderCore::BeginDraw() {
 
   RenderContext context{CommandBuffer(this, command_buffers_[next_image_index_])};
 
-  context.uniform_buffer = uniform_buffers_[next_image_index_];
   context.image_available_semaphore = image_available_semaphores_[current_frame_];
   context.render_finished_semaphore = render_finished_semaphores_[current_frame_];
   context.in_flight_fence = in_flight_fences_[current_frame_];
@@ -761,6 +662,7 @@ RenderContext RenderCore::BeginDraw() {
   if (render_pass_ == nullptr) {
     render_pass_ = std::make_shared<RenderPass>(device_, begin_render_info.render_pass_info);
   }
+  
   begin_render_info.render_pass = render_pass_;
 
   if (framebuffers_[next_image_index_] == nullptr) {
@@ -770,7 +672,6 @@ RenderContext RenderCore::BeginDraw() {
   begin_render_info.framebuffer = framebuffers_[next_image_index_];
 
   context.command_buffer.BeginRenderPass(begin_render_info);
-  context.command_buffer.SetDescriptorSet(0, descriptor_sets_[next_image_index_]);
 
   VkViewport viewport{};
   viewport.x = 0.0F;

@@ -21,14 +21,6 @@ struct BeginRenderInfo {
   std::shared_ptr<Framebuffer> framebuffer;
 };
 
-struct ResourceBinding {
-  VkBuffer buffer;
-  VkDeviceSize offset;
-  VkDeviceSize size;
-};
-
-using SetResourceBindings = std::unordered_map<uint8_t, ResourceBinding>;
-using ResourceBindings = std::unordered_map<uint8_t, SetResourceBindings>;
 
 struct GraphicsState {
   bool is_wireframe = false;
@@ -36,7 +28,7 @@ struct GraphicsState {
   std::shared_ptr<RenderPass> render_pass;
 
   std::unordered_map<uint32_t, VkDescriptorSet> descriptor_sets;
-  const Material *material = nullptr;
+  Material *material = nullptr;
 
   ResourceBindings resource_bindings;
 };
@@ -69,7 +61,7 @@ class CommandBuffer {
 
   void AllocateUniformBuffer(uint32_t set, uint32_t binding, const VkDeviceSize size, const void *data);
 
-  void BindMaterial(const Material &material);
+  void BindMaterial(Material &material);
 
   void DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset,
                    uint32_t first_instance);

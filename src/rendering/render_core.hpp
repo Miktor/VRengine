@@ -35,7 +35,6 @@ struct RenderContext {
   VkFence images_in_flight;
 
   RenderData render_data;
-  std::shared_ptr<Buffer> uniform_buffer;
 };
 
 class RenderCore {
@@ -61,12 +60,6 @@ class RenderCore {
   std::vector<std::shared_ptr<Framebuffer>> framebuffers_;
   std::shared_ptr<RenderPass> render_pass_;
   std::shared_ptr<Pipeline> pipeline_;
-
-  VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
-
-  std::vector<std::shared_ptr<Buffer>> uniform_buffers_;
-  VkDescriptorPool descriptor_pool_;
-  std::vector<VkDescriptorSet> descriptor_sets_;
 
   VkCommandPool command_pool_ = VK_NULL_HANDLE;
 

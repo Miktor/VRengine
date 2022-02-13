@@ -8,6 +8,7 @@
 
 #include <shaderc/shaderc.hpp>
 #include <spirv-cross/spirv_cross.hpp>
+#include <vector>
 
 #include "common.hpp"
 #include "platform/platform.hpp"
@@ -105,7 +106,8 @@ std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const Sh
   return result;
 }
 
-std::unordered_map<uint8_t, std::vector<VkDescriptorSetLayoutBinding>> GetLayoutBindings(const CombinedResourceLayout &resource_layout) {
+std::unordered_map<uint8_t, std::vector<VkDescriptorSetLayoutBinding>> GetLayoutBindings(
+    const CombinedResourceLayout &resource_layout) {
   std::unordered_map<uint8_t, std::vector<VkDescriptorSetLayoutBinding>> result;
 
   for (const auto &[set, descriptor_set_layoout] : resource_layout.descriptor_set_layouts) {
@@ -125,29 +127,11 @@ std::unordered_map<uint8_t, std::vector<VkDescriptorSetLayoutBinding>> GetLayout
   return result;
 }
 
-std::vector<VkDescriptorSetLayout> GetDescriptorSetLayouts(
-    VkDevice device, const std::unordered_map<uint8_t, std::vector<VkDescriptorSetLayoutBinding>> &bindings) {
-  std::vector<VkDescriptorSetLayout> result;
-  result.reserve(bindings.size());
-
-  for (const auto &[_, binding] : bindings) {
-    VkDescriptorSetLayoutCreateInfo layout_info{};
-    layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layout_info.bindingCount = binding.size();
-    layout_info.pBindings = binding.data();
-
-    VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
-    CHECK_VK_SUCCESS(vkCreateDescriptorSetLayout(device, &layout_info, nullptr, &descriptor_set_layout));
-    result.push_back(descriptor_set_layout);
-  }
-
-  return result;
-}
-
 void UpdateFromShader(CombinedResourceLayout &result, const Shader &shader) {
   for (const auto &[set, layout] : shader.GetResourceLayout().descriptor_set_layouts) {
     auto &result_layout = result.descriptor_set_layouts[set];
-    result_layout.uniform_buffers.insert(result_layout.uniform_buffers.end(), layout.uniform_buffers.begin(), layout.uniform_buffers.end());
+    result_layout.uniform_buffers.insert(result_layout.uniform_buffers.end(), layout.uniform_buffers.begin(),
+                                         layout.uniform_buffers.end());
   }
 }
 
@@ -162,7 +146,8 @@ CombinedResourceLayout BuildCombinedResourceLayout(const Shader &fragment, const
 
 }  // namespace
 
-Shader::Shader(VkDevice device, Type type, const std::string &path) : device_(device), type_(type), path_(path) {
+Shader::Shader(VkDevice device, Type type, const std::string &path)
+    : device_(device), type_(type), path_(path) {
   const auto data = platform::Platform::ReadFile(path_);
   auto compiled = Compile(data, path_, type_);
   std::vector<uint32_t> spirv(compiled.cbegin(), compiled.cend());
@@ -179,14 +164,43 @@ Shader::Shader(VkDevice device, Type type, const std::string &path) : device_(de
 
 PipelineLayout::PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout)
     : device_(device), resource_layout_(resource_layout) {
-  descriptor_set_layouts_ = ::vre::rendering::GetDescriptorSetLayouts(device_, GetLayoutBindings(resource_layout_));
+  constexpr uint32_t kSet = 0;
+  descriptor_set_allocators_.emplace_back(device_, resource_layout_.descriptor_set_layouts[kSet]);
 
+  auto layout = descriptor_set_allocators_.front().GetLayout();
   VkPipelineLayoutCreateInfo pipeline_layout_info{};
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = descriptor_set_layouts_.size();
-  pipeline_layout_info.pSetLayouts = descriptor_set_layouts_.data();
+  pipeline_layout_info.setLayoutCount = 1;
+  pipeline_layout_info.pSetLayouts = &layout;
 
   CHECK_VK_SUCCESS(vkCreatePipelineLayout(device_, &pipeline_layout_info, nullptr, &pipeline_layout_));
+
+  std::vector<VkDescriptorUpdateTemplateEntryKHR> update_entries;
+  for (const auto &binding : resource_layout_.descriptor_set_layouts[kSet].uniform_buffers) {
+    VkDescriptorUpdateTemplateEntryKHR update_entry{};
+    update_entry.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    update_entry.dstBinding = binding.binding;
+    update_entry.dstArrayElement = 0;
+    update_entry.descriptorCount = 1;
+    update_entry.offset = offsetof(ResourceBinding, buffer) + sizeof(ResourceBinding) * binding.binding;
+    update_entry.stride = sizeof(ResourceBinding);
+    update_entries.push_back(update_entry);
+  }
+
+  VkDescriptorUpdateTemplateCreateInfoKHR info = {
+      VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR};
+  info.pipelineLayout = pipeline_layout_;
+  info.descriptorSetLayout = GetDescriptorSetAllocator(kSet).GetLayout();
+  info.templateType = VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR;
+  info.set = kSet;
+  info.descriptorUpdateEntryCount = update_entries.size();
+  info.pDescriptorUpdateEntries = update_entries.data();
+  info.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+  VkDescriptorUpdateTemplateKHR update_template;
+  CHECK_VK_SUCCESS(vkCreateDescriptorUpdateTemplate(device_, &info, nullptr, &update_template));
+
+  descriptor_update_template_.push_back(update_template);
 }
 
 Material::Material(VkDevice device, Shader &&fragment, Shader &&vertex)
@@ -211,11 +225,11 @@ std::vector<VkPipelineShaderStageCreateInfo> Material::GetShaderStages() const {
   return {vert_shader_stage_info, frag_shader_stage_info};
 }
 
-std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>> Material::GetInputBindings()
-    const {
+std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>>
+Material::GetInputBindings() const {
   return std::make_tuple(GetBindingDescription(vertex_), GetAttributeDescriptions(vertex_));
 }
 
-PipelineLayout &Material::GetPipelineLayout() const { return *pipeline_layout_; }
+PipelineLayout &Material::GetPipelineLayout() { return *pipeline_layout_; }
 
 }  // namespace vre::rendering

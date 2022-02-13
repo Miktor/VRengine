@@ -26,8 +26,7 @@ class Buffer {
         vma_allocator_(vma_allocator),
         vma_allocation_(vma_allocation),
         size_(size),
-        allocation_info_(allocation_info) {
-  }
+        allocation_info_(allocation_info) {}
 
   void Update(const void *data) {
     VR_ASSERT(allocation_info_.pMappedData);
@@ -41,6 +40,8 @@ class Buffer {
 
   [[nodiscard]] VkDeviceSize GetSize() const { return size_; }
   [[nodiscard]] VkBuffer GetBuffer() const { return buffer_; }
+
+  [[nodiscard]] VkDeviceSize GetBufferOffset() const { return allocation_info_.offset; }
 
  private:
   VkBuffer buffer_;

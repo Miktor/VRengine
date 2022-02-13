@@ -1,4 +1,5 @@
 #include "command_buffer.hpp"
+#include <vector>
 
 #include "helpers.hpp"
 #include "rendering/render_core.hpp"
@@ -83,7 +84,8 @@ void CommandBuffer::BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, V
 
 void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer,
                                       const VkDeviceSize offset, const VkDeviceSize size) {
-  auto &resource_binding = state_.resource_bindings[set][binding];
+  state_.resource_bindings[set].push_back({});
+  auto &resource_binding = state_.resource_bindings[set].back();
   resource_binding.buffer = buffer.GetBuffer();
   resource_binding.offset = offset;
   resource_binding.size = size;
@@ -104,7 +106,7 @@ void CommandBuffer::AllocateUniformBuffer(uint32_t set, uint32_t binding, const 
   memcpy(ubo_allocated_data_->GetBuffer().GetMappedData(), data, size);
 }
 
-void CommandBuffer::BindMaterial(const Material &material) { state_.material = &material; }
+void CommandBuffer::BindMaterial(Material &material) { state_.material = &material; }
 
 void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index,
                                 int32_t vertex_offset, uint32_t first_instance) {
@@ -116,7 +118,7 @@ void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, u
 void CommandBuffer::BindDescriptorSet(uint32_t set) {
   VR_ASSERT(state_.material);
 
-  const auto &pipeline_layout = state_.material->GetPipelineLayout();
+  auto &pipeline_layout = state_.material->GetPipelineLayout();
   if (const auto &descriptor_sets = state_.descriptor_sets;
       descriptor_sets.find(set) != descriptor_sets.end()) {
     vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -124,6 +126,22 @@ void CommandBuffer::BindDescriptorSet(uint32_t set) {
                             0, nullptr);
     return;
   }
+
+  std::vector<uint32_t> dynamic_offsets;
+  for (const auto &resource_binding : state_.resource_bindings[set]) {
+    dynamic_offsets.push_back(resource_binding.offset);
+  }
+
+  auto &allocator = pipeline_layout.GetDescriptorSetAllocator(set);
+  auto descriptor_set = allocator.GetSet();
+
+  auto update_template = pipeline_layout.GetUpdateTemplate(set);
+  vkUpdateDescriptorSetWithTemplate(core_->GetDevice(), descriptor_set, update_template,
+                                    state_.resource_bindings[set].data());
+
+  vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          pipeline_layout.GetPipelineLayout(), set, 1, &descriptor_set,
+                          dynamic_offsets.size(), dynamic_offsets.data());
 }
 
 VkPipeline CommandBuffer::BuildGraphicsPipeline() {

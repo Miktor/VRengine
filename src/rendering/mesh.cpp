@@ -74,11 +74,7 @@ void Mesh::Render(rendering::RenderContext &context) {
     data.proj = context.render_data.camera_projection;
 
     context.command_buffer.AllocateUniformBuffer(0, 0, sizeof(data), &data);
-
-    context.uniform_buffer->Update(&data);
   }
-
-  context.command_buffer.BindUniformBuffer(0, 0, *context.uniform_buffer, 0, sizeof(UniformBufferObject));
   
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {

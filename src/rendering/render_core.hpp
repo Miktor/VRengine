@@ -6,7 +6,6 @@
 #include "rendering/buffers.hpp"
 #include "rendering/command_buffer.hpp"
 #include "rendering/image.hpp"
-#include "rendering/pipeline.hpp"
 #include "rendering/render_pass.hpp"
 #include "rendering/uniform_buffer_allocator.hpp"
 
@@ -59,7 +58,6 @@ class RenderCore {
   std::vector<Image> backbuffers_;
   std::vector<std::shared_ptr<Framebuffer>> framebuffers_;
   std::shared_ptr<RenderPass> render_pass_;
-  std::shared_ptr<Pipeline> pipeline_;
 
   VkCommandPool command_pool_ = VK_NULL_HANDLE;
 

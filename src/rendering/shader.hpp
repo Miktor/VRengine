@@ -4,7 +4,6 @@
 #include "common.hpp"
 
 #include "rendering/descriptor_set_allocator.hpp"
-#include "rendering/pipeline.hpp"
 
 namespace vre::rendering {
 

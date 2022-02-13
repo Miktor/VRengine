@@ -6,7 +6,6 @@
 
 #include "common.hpp"
 #include "rendering/buffers.hpp"
-#include "rendering/pipeline.hpp"
 #include "rendering/render_pass.hpp"
 #include "rendering/shader.hpp"
 #include "rendering/uniform_buffer_allocator.hpp"

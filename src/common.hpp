@@ -24,8 +24,10 @@
 
 #include <vk_mem_alloc.h>
 
+#include <glm/ext/quaternion_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "helpers.hpp"

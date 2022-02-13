@@ -4,6 +4,7 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "GLFW/glfw3.h"
 #include "scene/node.hpp"
 
 namespace vre {
@@ -13,6 +14,29 @@ namespace {
 constexpr uint32_t kWidth = 800;
 constexpr uint32_t kHeight = 600;
 
+void UpdateControlsState(ControlsState &state, int key, bool new_value) {
+  switch (key) {
+    case GLFW_KEY_W:
+      state.forward = new_value;
+      break;
+    case GLFW_KEY_S:
+      state.backward = new_value;
+      break;
+    case GLFW_KEY_A:
+      state.left = new_value;
+      break;
+    case GLFW_KEY_D:
+      state.right = new_value;
+      break;
+    case GLFW_KEY_LEFT_SHIFT:
+      state.up = new_value;
+      break;
+    case GLFW_KEY_LEFT_CONTROL:
+      state.down = new_value;
+      break;
+  }
+}
+
 }  // namespace
 
 static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
@@ -20,34 +44,47 @@ static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, i
   app->ProcessInput(window, key, scancode, action, mods);
 }
 
-bool Application::ProcessInput(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/) {
+static void MouseMoveCallback(GLFWwindow *window, double xpos, double ypos) {
+  auto *app = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
+  app->ProcessMouseMove(window, xpos, ypos);
+}
+
+static void MouseKeyCallback(GLFWwindow *window, int button, int action, int mods) {
+  auto *app = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
+  app->ProcessMouseKey(window, button, action, mods);
+}
+
+void Application::ProcessInput(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
-    return false;
+    return;
   }
 
   if (action == GLFW_PRESS) {
-    constexpr float kStep = 0.1F;
-    glm::vec3 transform(0.0F);
-    switch (key) {
-      case GLFW_KEY_W:
-        transform += glm::vec3(0, 1.F, 0);
-        break;
-      case GLFW_KEY_A:
-        transform += glm::vec3(-1.F, 0, 0);
-        break;
-      case GLFW_KEY_S:
-        transform += glm::vec3(0, -1.F, 0);
-        break;
-      case GLFW_KEY_D:
-        transform += glm::vec3(1.F, 0, 0);
-        break;
-    }
-
-    main_scene_.main_camera_node_->transform_.position += transform * kStep;
+    UpdateControlsState(controlls_state_, key, true);
   }
+  if (action == GLFW_RELEASE) {
+    UpdateControlsState(controlls_state_, key, false);
+  }
+}
 
-  return true;
+void Application::ProcessMouseKey(GLFWwindow *window, int button, int action, int mods) {
+  switch (button) {
+    case GLFW_MOUSE_BUTTON_1:
+      if (action == GLFW_PRESS) {
+        move_camera_ = true;
+      }
+      if (action == GLFW_RELEASE) {
+        move_camera_ = false;
+      }
+  }
+}
+
+void Application::ProcessMouseMove(GLFWwindow *window, double xpos, double ypos) {
+  MousePos current_pos{xpos, ypos};
+  mouse_move_.x = last_mouse_pos_.x - current_pos.x;
+  mouse_move_.y = last_mouse_pos_.y - current_pos.y;
+  last_mouse_pos_ = current_pos;
 }
 
 void Application::Run() {
@@ -72,11 +109,53 @@ void Application::InitWindow() {
 
   glfwSetWindowUserPointer(window_, this);
   glfwSetKeyCallback(window_, KeyCallback);
+  glfwSetMouseButtonCallback(window_, MouseKeyCallback);
+  glfwSetCursorPosCallback(window_, MouseMoveCallback);
 }
 
 void Application::MainLoop() {
   while (glfwWindowShouldClose(window_) == 0) {
     glfwPollEvents();
+
+    constexpr float kStep = 0.1F;
+    glm::vec3 transform(0.0F);
+    const auto &camera = main_scene_.main_camera_;
+    if (controlls_state_.forward) {
+      transform += camera->GetForward();
+    }
+    if (controlls_state_.backward) {
+      transform -= camera->GetForward();
+    }
+    if (controlls_state_.left) {
+      transform += camera->GetLeft();
+    }
+    if (controlls_state_.right) {
+      transform -= camera->GetLeft();
+    }
+    if (controlls_state_.up) {
+      transform += camera->GetUp();
+    }
+    if (controlls_state_.down) {
+      transform -= camera->GetUp();
+    }
+
+    auto &camera_transform = main_scene_.main_camera_node_->transform_;
+    camera_transform.position += transform * kStep;
+    if (move_camera_) {
+      constexpr float kMouseSensitivity = 0.1f;
+      if (mouse_move_.x != 0.0) {
+        auto rot =
+            glm::angleAxis(glm::radians(float(mouse_move_.x) * kMouseSensitivity), glm::vec3(0, 1.F, 0));
+        camera_transform.rotation *= rot;
+      }
+
+      if (mouse_move_.y != 0.0) {
+        auto rot =
+            glm::angleAxis(glm::radians(float(mouse_move_.y) * kMouseSensitivity), glm::vec3(1.F, 0, 0));
+        camera_transform.rotation *= rot;
+      }
+    }
+    mouse_move_ = {0, 0};
 
     auto context = render_core_.BeginDraw();
 

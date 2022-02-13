@@ -7,7 +7,9 @@
 
 namespace vre::scene {
 
-void Scene::LoadFromFile() { root_nodes_ = serialization::GLTFLoader::LoadFromFile("assets/scenes/basic.gltf"); }
+void Scene::LoadFromFile() {
+  root_nodes_ = serialization::GLTFLoader::LoadFromFile("assets/scenes/basic.gltf");
+}
 
 void Scene::CreateCamera() {
   main_camera_ = std::make_shared<vre::scene::Camera>();
@@ -15,9 +17,9 @@ void Scene::CreateCamera() {
   main_camera_node_ = GetRootNode()->CreateChildNode("main_camera");
   main_camera_node_->Attach(main_camera_);
 
-  main_camera_node_->transform_.position = glm::vec3(0.0F, 3.0F, 5.0F);
-  main_camera_node_->transform_.rotation = glm::quatLookAt(glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F));
-  
+  main_camera_node_->transform_.position = glm::vec3(5.0F, 5.0F, 5.0F);
+  main_camera_node_->transform_.rotation =
+      glm::quatLookAt(glm::normalize(-main_camera_node_->transform_.position), glm::vec3(0.0F, 0.0F, 1.0F));
 }
 
 void Scene::InitializeVulkan(rendering::RenderCore &renderer) {

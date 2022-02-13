@@ -8,17 +8,27 @@
 
 namespace vre {
 
-struct SwapChainSupportDetails {
-  VkSurfaceCapabilitiesKHR capabilities_{};
-  std::vector<VkSurfaceFormatKHR> formats_;
-  std::vector<VkPresentModeKHR> present_modes_;
+struct ControlsState {
+  bool forward = false;
+  bool backward = false;
+  bool left = false;
+  bool right = false;
+  bool up = false;
+  bool down = false;
+};
+
+struct MousePos {
+  double x = .0;
+  double y = .0;
 };
 
 class Application {
  public:
   void Run();
 
-  virtual bool ProcessInput(GLFWwindow *window, int key, int scancode, int action, int mods);
+  void ProcessInput(GLFWwindow *window, int key, int scancode, int action, int mods);
+  void ProcessMouseKey(GLFWwindow *window, int button, int action, int mods);
+  void ProcessMouseMove(GLFWwindow *window, double xpos, double ypos);
 
  protected:
   GLFWwindow *window_ = nullptr;
@@ -26,6 +36,12 @@ class Application {
   rendering::RenderCore render_core_;
 
   scene::Scene main_scene_;
+
+  ControlsState controlls_state_;
+
+  MousePos last_mouse_pos_;
+  MousePos mouse_move_;
+  bool move_camera_ = false;
 
   virtual void Cleanup();
 

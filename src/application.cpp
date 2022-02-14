@@ -121,16 +121,16 @@ void Application::MainLoop() {
     glm::vec3 transform(0.0F);
     const auto &camera = main_scene_.main_camera_;
     if (controlls_state_.forward) {
-      transform += camera->GetForward();
+      transform += camera->GetRelativeForward();
     }
     if (controlls_state_.backward) {
-      transform -= camera->GetForward();
+      transform -= camera->GetRelativeForward();
     }
     if (controlls_state_.left) {
-      transform += camera->GetLeft();
+      transform += camera->GetRelativeLeft();
     }
     if (controlls_state_.right) {
-      transform -= camera->GetLeft();
+      transform -= camera->GetRelativeLeft();
     }
     if (controlls_state_.up) {
       transform += camera->GetUp();
@@ -139,23 +139,24 @@ void Application::MainLoop() {
       transform -= camera->GetUp();
     }
 
+    SPDLOG_INFO("trnsfrm: {}", glm::to_string(transform));
     auto &camera_transform = main_scene_.main_camera_node_->transform_;
     camera_transform.position += transform * kStep;
+    SPDLOG_INFO("f pos: {}", glm::to_string(camera_transform.position));
+
     if (move_camera_) {
       constexpr float kMouseSensitivity = 0.1f;
       if (mouse_move_.x != 0.0) {
-        auto rot =
-            glm::angleAxis(glm::radians(float(mouse_move_.x) * kMouseSensitivity), glm::vec3(0, 1.F, 0));
-        camera_transform.rotation *= rot;
+        camera->AddYaw(float(mouse_move_.x) * kMouseSensitivity);
       }
 
       if (mouse_move_.y != 0.0) {
-        auto rot =
-            glm::angleAxis(glm::radians(float(mouse_move_.y) * kMouseSensitivity), glm::vec3(1.F, 0, 0));
-        camera_transform.rotation *= rot;
+        camera->AddPitch(float(mouse_move_.y) * kMouseSensitivity);
       }
     }
     mouse_move_ = {0, 0};
+
+    main_scene_.GetRootNode()->transform_.rotation *= glm::angleAxis(glm::radians(1.f), camera->GetUp());
 
     auto context = render_core_.BeginDraw();
 

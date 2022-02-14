@@ -25,6 +25,8 @@ IF(MSVC)
     add_definitions(-DNOMINMAX)
 ENDIF()
 
+add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
+
 add_definitions(-DVK_DEBUG)
 
 add_subdirectory(external)

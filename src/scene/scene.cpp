@@ -1,5 +1,7 @@
 #include "scene.hpp"
 
+#include <glm/gtx/matrix_decompose.hpp>
+
 #include "node.hpp"
 #include "rendering/mesh.hpp"
 #include "rendering/render_core.hpp"
@@ -17,9 +19,7 @@ void Scene::CreateCamera() {
   main_camera_node_ = GetRootNode()->CreateChildNode("main_camera");
   main_camera_node_->Attach(main_camera_);
 
-  main_camera_node_->transform_.position = glm::vec3(5.0F, 5.0F, 5.0F);
-  main_camera_node_->transform_.rotation =
-      glm::quatLookAt(glm::normalize(-main_camera_node_->transform_.position), glm::vec3(0.0F, 0.0F, 1.0F));
+  main_camera_node_->transform_.position = glm::vec3(0, -2, -10);
 }
 
 void Scene::InitializeVulkan(rendering::RenderCore &renderer) {
@@ -45,12 +45,12 @@ void Scene::Render(rendering::RenderContext &context) {
   for (auto &node : root_nodes_) {
     for (auto &child : node->childrens_) {
       if (child->mesh_) {
-        child->mesh_->Render(context);
+        child->mesh_->Render(context, child->GetTransform());
       }
     }
 
     if (node->mesh_) {
-      node->mesh_->Render(context);
+      node->mesh_->Render(context, node->GetTransform());
     }
   }
 }

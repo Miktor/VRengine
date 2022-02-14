@@ -23,7 +23,7 @@ class Mesh {
   void AddPrimitive(std::vector<glm::vec3> vert, const std::vector<uint32_t> &indicies);
 
   void InitializeVulkan(RenderCore &renderer);
-  void Render(rendering::RenderContext &context);
+  void Render(rendering::RenderContext &context, const glm::mat4 &transform);
 
  private:
   std::vector<Primitive> primitives_;

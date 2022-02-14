@@ -1,4 +1,5 @@
 #include "command_buffer.hpp"
+#include <vulkan/vulkan_core.h>
 #include <vector>
 
 #include "helpers.hpp"
@@ -74,16 +75,22 @@ void CommandBuffer::SetDescriptorSet(uint8_t set, VkDescriptorSet descriptor_set
 
 void CommandBuffer::BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset,
                                       VkDeviceSize stride, VkVertexInputRate step_rate) {
+  VR_ASSERT(state_.material);  // TODO: check correct buffer
+
   const auto vk_buffer = buffer.GetBuffer();
   vkCmdBindVertexBuffers(command_buffer_, binding, 1, &vk_buffer, &offset);
 }
 
 void CommandBuffer::BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, VkIndexType index_type) {
+  VR_ASSERT(state_.material);
+
   vkCmdBindIndexBuffer(command_buffer_, buffer.GetBuffer(), offset, index_type);
 }
 
 void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer,
                                       const VkDeviceSize offset, const VkDeviceSize size) {
+  VR_ASSERT(state_.material);
+
   state_.resource_bindings[set].push_back({});
   auto &resource_binding = state_.resource_bindings[set].back();
   resource_binding.buffer = buffer.GetBuffer();

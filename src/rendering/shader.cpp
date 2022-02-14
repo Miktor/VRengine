@@ -61,7 +61,6 @@ ResourceLayout GetResourceLayout(std::vector<uint32_t> &&spirv) {
   for (auto &resource : resources.uniform_buffers) {
     const auto set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
     const auto binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-    SPDLOG_INFO("UB {} at set = {}, binding = {}", resource.name.c_str(), set, binding);
 
     DescriptorSetLayout::UniformBuffer ub{};
     ub.name = resource.name;
@@ -97,7 +96,8 @@ std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const Sh
 
     attribute_description.binding = 0;
     attribute_description.location = input.location;
-    attribute_description.format = VK_FORMAT_R32G32_SFLOAT;
+    // TODO: Choose it dynamicly
+    attribute_description.format = VK_FORMAT_R32G32B32_SFLOAT;
     attribute_description.offset = input.offset;
 
     result.push_back(attribute_description);

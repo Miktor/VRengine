@@ -60,22 +60,22 @@ void Mesh::InitializeVulkan(RenderCore &renderer) {
   material_ = GetDefaultMaterial(renderer.GetDevice());
 }
 
-void Mesh::Render(rendering::RenderContext &context) {
+void Mesh::Render(rendering::RenderContext &context, const glm::mat4 &transform) {
+  context.command_buffer.BindMaterial(*material_);
   context.command_buffer.BindVertexBuffers(0, *vertex_buffer_, 0, sizeof(glm::vec3),
                                            VK_VERTEX_INPUT_RATE_VERTEX);
   context.command_buffer.BindIndexBuffer(*index_buffer_, 0, VK_INDEX_TYPE_UINT32);
-  context.command_buffer.BindMaterial(*material_);
 
   // TODO: make it for each mesh
   {
     rendering::UniformBufferObject data{};
-    data.model = glm::mat4(1.0F);
+    data.model = transform;
     data.view = context.render_data.camera_view;
     data.proj = context.render_data.camera_projection;
 
     context.command_buffer.AllocateUniformBuffer(0, 0, sizeof(data), &data);
   }
-  
+
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {
     context.command_buffer.DrawIndexed(static_cast<uint32_t>(primitive.index_count), 1, 0, 0, 0);

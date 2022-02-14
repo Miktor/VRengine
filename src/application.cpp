@@ -139,10 +139,8 @@ void Application::MainLoop() {
       transform -= camera->GetUp();
     }
 
-    SPDLOG_INFO("trnsfrm: {}", glm::to_string(transform));
     auto &camera_transform = main_scene_.main_camera_node_->transform_;
     camera_transform.position += transform * kStep;
-    SPDLOG_INFO("f pos: {}", glm::to_string(camera_transform.position));
 
     if (move_camera_) {
       constexpr float kMouseSensitivity = 0.1f;

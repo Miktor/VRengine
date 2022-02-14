@@ -10,12 +10,10 @@ Camera::Camera() {}
 
 void Camera::AddYaw(float yaw) {
   yaw_ += yaw;
-  SPDLOG_INFO("yaw_: {}", yaw_);
 }
 
 void Camera::AddPitch(float pitch) {
   pitch_ += pitch;
-  SPDLOG_INFO("pitch_: {}", pitch_);
 }
 
 glm::mat4 Camera::GetView() const {

@@ -50,6 +50,8 @@ class RenderCore {
   VkQueue graphics_queue_ = VK_NULL_HANDLE;
   VkQueue present_queue_ = VK_NULL_HANDLE;
 
+  VkPipelineCache pipeline_cache_;
+
   VkSwapchainKHR swap_chain_ = VK_NULL_HANDLE;
   std::vector<VkImage> swap_chain_images_;
   VkFormat swap_chain_image_format_ = VkFormat::VK_FORMAT_UNDEFINED;
@@ -93,6 +95,9 @@ class RenderCore {
   void WaitDeviceIdle();
 
  private:
+  void InitPipelineCache();
+  void SaveAndDestroyPipelineCache();
+  
   void CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &indices);
   void CreateImageViews();
   void CreateSyncObjects();

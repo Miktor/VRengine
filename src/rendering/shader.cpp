@@ -162,7 +162,9 @@ Shader::Shader(VkDevice device, Type type, const std::string &path)
   resource_layout_ = ::vre::rendering::GetResourceLayout(std::move(spirv));
 }
 
-Shader::~Shader() { vkDestroyShaderModule(device_, shader_module_, nullptr); }
+Shader::~Shader() {
+  vkDestroyShaderModule(device_, shader_module_, nullptr);
+}
 
 PipelineLayout::PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout)
     : device_(device), resource_layout_(resource_layout) {
@@ -239,6 +241,8 @@ Material::GetInputBindings() const {
   return std::make_tuple(GetBindingDescription(vertex_), GetAttributeDescriptions(vertex_));
 }
 
-PipelineLayout &Material::GetPipelineLayout() { return *pipeline_layout_; }
+PipelineLayout &Material::GetPipelineLayout() {
+  return *pipeline_layout_;
+}
 
 }  // namespace vre::rendering

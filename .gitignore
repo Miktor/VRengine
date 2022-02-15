@@ -8,6 +8,7 @@
 *.sln.docstates
 *.vscode/
 compile_commands.json
+pipeline_cache.bin
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

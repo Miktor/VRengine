@@ -45,8 +45,10 @@ class Shader {
   Shader(VkDevice device, Type type, const std::string &path);
   ~Shader();
 
-  [[nodiscard]] VkShaderModule GetShaderModule() const { return shader_module_; }
+  Shader(Shader &) = delete;
+  Shader(Shader &&) = default;
 
+  [[nodiscard]] VkShaderModule GetShaderModule() const { return shader_module_; }
   [[nodiscard]] const ResourceLayout &GetResourceLayout() const { return resource_layout_; }
 
  private:
@@ -67,7 +69,7 @@ struct CombinedResourceLayout {
 class PipelineLayout {
  public:
   PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout);
-~PipelineLayout();
+  ~PipelineLayout();
 
   [[nodiscard]] DescriptorSetAllocator &GetDescriptorSetAllocator(uint32_t set) {
     VR_ASSERT(set < descriptor_set_allocators_.size());

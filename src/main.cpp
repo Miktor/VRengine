@@ -20,7 +20,6 @@ void Handler(int sig) {
 
 int main(const int /*argc*/, const char ** /*argv[]*/) {
   //signal(SIGSEGV, Handler);
-  //signal(SIGSTOP, Handler);
 
   spdlog::info("Start");
 

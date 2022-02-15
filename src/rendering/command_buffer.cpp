@@ -239,8 +239,8 @@ VkPipeline CommandBuffer::BuildGraphicsPipeline() {
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 
   VkPipeline graphics_pipeline;
-  CHECK_VK_SUCCESS(vkCreateGraphicsPipelines(core_->GetDevice(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr,
-                                             &graphics_pipeline));
+  CHECK_VK_SUCCESS(
+      vkCreateGraphicsPipelines(core_->GetDevice(), cache_, 1, &pipeline_info, nullptr, &graphics_pipeline));
 
   return graphics_pipeline;
 }

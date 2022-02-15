@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <memory>
 #include <tuple>
+#include <vector>
 
 #include <vulkan/vulkan_core.h>
 #include "vk_mem_alloc.h"
@@ -495,6 +496,30 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
 
   CreateSyncObjects();
   command_buffers_ = AllocateCommandBuffers(backbuffers_.size(), device, command_pool_);
+
+  InitPipelineCache();
+}
+
+void RenderCore::InitPipelineCache() {
+  auto file_data = vre::platform::Platform::ReadFile("pipeline_cache.bin", false);
+
+  VkPipelineCacheCreateInfo info = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
+  info.initialDataSize = file_data.size();
+  info.pInitialData = file_data.data();
+
+  CHECK_VK_SUCCESS(vkCreatePipelineCache(device_, &info, nullptr, &pipeline_cache_));
+}
+
+void RenderCore::SaveAndDestroyPipelineCache() {
+  size_t size = 0;
+  CHECK_VK_SUCCESS(vkGetPipelineCacheData(device_, pipeline_cache_, &size, nullptr));
+
+  std::vector<uint8_t> data;
+  data.resize(size);
+  CHECK_VK_SUCCESS(vkGetPipelineCacheData(device_, pipeline_cache_, &size, data.data()));
+
+  vre::platform::Platform::WriteFile("pipeline_cache.bin", data.data(), size);
+  vkDestroyPipelineCache(device_, pipeline_cache_, nullptr);
 }
 
 void RenderCore::CleanupSwapChain() {
@@ -505,6 +530,8 @@ void RenderCore::CleanupSwapChain() {
 }
 
 void RenderCore::Cleanup() {
+  SaveAndDestroyPipelineCache();
+
   CleanupSwapChain();
 
   ubo_allocator_.reset();
@@ -649,7 +676,7 @@ RenderContext RenderCore::BeginDraw() {
 
   images_in_flight_[next_image_index_] = in_flight_fences_[current_frame_];
 
-  RenderContext context{CommandBuffer(this, command_buffers_[next_image_index_])};
+  RenderContext context{CommandBuffer(this, command_buffers_[next_image_index_], pipeline_cache_)};
 
   context.image_available_semaphore = image_available_semaphores_[current_frame_];
   context.render_finished_semaphore = render_finished_semaphores_[current_frame_];
@@ -664,7 +691,7 @@ RenderContext RenderCore::BeginDraw() {
   if (render_pass_ == nullptr) {
     render_pass_ = std::make_shared<RenderPass>(device_, begin_render_info.render_pass_info);
   }
-  
+
   begin_render_info.render_pass = render_pass_;
 
   if (framebuffers_[next_image_index_] == nullptr) {

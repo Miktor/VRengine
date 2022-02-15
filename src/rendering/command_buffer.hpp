@@ -33,9 +33,9 @@ struct GraphicsState {
 
 class CommandBuffer {
  public:
-  CommandBuffer(RenderCore *core, VkCommandBuffer command_buffer)
-      : core_(core), command_buffer_(command_buffer) {}
-      
+  CommandBuffer(RenderCore *core, VkCommandBuffer command_buffer, VkPipelineCache cache)
+      : core_(core), command_buffer_(command_buffer), cache_(cache) {}
+
   ~CommandBuffer();
 
   CommandBuffer(CommandBuffer &) = delete;
@@ -69,7 +69,8 @@ class CommandBuffer {
  private:
   RenderCore *core_ = nullptr;
   VkCommandBuffer command_buffer_;
-
+  VkPipelineCache cache_;
+  
   GraphicsState state_;
   std::shared_ptr<UniformBufferAllocation> ubo_allocated_data_ = nullptr;
 

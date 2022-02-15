@@ -6,7 +6,7 @@ namespace vre::rendering {
 ImageView::ImageView(VkDevice device, VkImageView view, ImageViewCreateInfo &&info)
     : device_(device), view_(view), info_(std::move(info)) {}
 
-ImageView::~ImageView() { vkDestroyImageView(device_,  view_, nullptr); }
+ImageView::~ImageView() { vkDestroyImageView(device_, view_, nullptr); }
 
 Image::Image(VkDevice device, VkImage image, VkImageView default_view, const ImageCreateInfo &info,
              VkImageViewType view_type)
@@ -19,7 +19,7 @@ Image::Image(VkDevice device, VkImage image, VkImageView default_view, const Ima
   view_info.levels = info.levels;
   view_info.base_layer = 0;
   view_info.layers = info.layers;
-  view_ = std::make_shared<ImageView>(default_view, std::move(view_info));
+  view_ = std::make_shared<ImageView>(device_, default_view, std::move(view_info));
 }
 
 }  // namespace vre::rendering

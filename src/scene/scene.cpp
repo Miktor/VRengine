@@ -57,4 +57,9 @@ void Scene::Render(rendering::RenderContext &context) {
 
 std::shared_ptr<Node> Scene::GetRootNode() { return root_nodes_.front(); }
 
+void Scene::Cleanup() {
+  main_camera_node_.reset();
+  main_camera_.reset();
+  root_nodes_.clear();
+}
 }  // namespace vre::scene

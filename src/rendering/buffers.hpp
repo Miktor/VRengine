@@ -28,6 +28,8 @@ class Buffer {
         size_(size),
         allocation_info_(allocation_info) {}
 
+  virtual ~Buffer() { vmaDestroyBuffer(vma_allocator_, buffer_, vma_allocation_); }
+
   void Update(const void *data) {
     VR_ASSERT(allocation_info_.pMappedData);
     memcpy(allocation_info_.pMappedData, data, size_);

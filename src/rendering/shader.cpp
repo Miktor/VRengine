@@ -162,6 +162,8 @@ Shader::Shader(VkDevice device, Type type, const std::string &path)
   resource_layout_ = ::vre::rendering::GetResourceLayout(std::move(spirv));
 }
 
+Shader::~Shader() { vkDestroyShaderModule(device_, shader_module_, nullptr); }
+
 PipelineLayout::PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout)
     : device_(device), resource_layout_(resource_layout) {
   constexpr uint32_t kSet = 0;
@@ -201,6 +203,13 @@ PipelineLayout::PipelineLayout(VkDevice device, const CombinedResourceLayout &re
   CHECK_VK_SUCCESS(vkCreateDescriptorUpdateTemplate(device_, &info, nullptr, &update_template));
 
   descriptor_update_template_.push_back(update_template);
+}
+
+PipelineLayout::~PipelineLayout() {
+  for (auto update_template : descriptor_update_template_) {
+    vkDestroyDescriptorUpdateTemplate(device_, update_template, nullptr);
+  }
+  vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
 }
 
 Material::Material(VkDevice device, Shader &&fragment, Shader &&vertex)

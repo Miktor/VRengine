@@ -24,6 +24,11 @@ class UniformBufferAllocation {
   [[nodiscard]] const Buffer &GetBuffer() const;
   [[nodiscard]] UBOAllocation Allocate(VkDeviceSize size);
 
+
+  VkDeviceSize GetSize() { return size_; }
+
+  void Reset() { offset_ = 0; }
+
  private:
   std::shared_ptr<Buffer> buffer_;
   VkDeviceSize offset_ = 0;
@@ -39,6 +44,7 @@ class UniformBufferPoolAllocator {
   ~UniformBufferPoolAllocator();
 
   std::shared_ptr<UniformBufferAllocation> Allocate(VkDeviceSize minimum_size);
+  void Deallocate(std::shared_ptr<UniformBufferAllocation> allocation);
 
  private:
   RenderCore &render_core_;
@@ -48,6 +54,8 @@ class UniformBufferPoolAllocator {
   VkDeviceSize block_size_;
   VkDeviceSize alignment_;
   VkBufferUsageFlags usage_;
+
+  std::list<std::shared_ptr<UniformBufferAllocation>> free_blocks_;
 };
 
 }  // namespace vre::rendering

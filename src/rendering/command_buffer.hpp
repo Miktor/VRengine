@@ -20,7 +20,6 @@ struct BeginRenderInfo {
   std::shared_ptr<Framebuffer> framebuffer;
 };
 
-
 struct GraphicsState {
   bool is_wireframe = false;
 
@@ -36,6 +35,8 @@ class CommandBuffer {
  public:
   CommandBuffer(RenderCore *core, VkCommandBuffer command_buffer)
       : core_(core), command_buffer_(command_buffer) {}
+      
+  ~CommandBuffer();
 
   CommandBuffer(CommandBuffer &) = delete;
   CommandBuffer(CommandBuffer &&) = default;

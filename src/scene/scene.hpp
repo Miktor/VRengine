@@ -24,6 +24,8 @@ class Scene {
   void Update();
   void Render(rendering::RenderContext &context);
 
+   void Cleanup();
+
   std::shared_ptr<Node> GetRootNode();
 
   std::shared_ptr<Node> main_camera_node_;

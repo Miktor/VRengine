@@ -43,6 +43,7 @@ class Shader {
   };
 
   Shader(VkDevice device, Type type, const std::string &path);
+  ~Shader();
 
   [[nodiscard]] VkShaderModule GetShaderModule() const { return shader_module_; }
 
@@ -66,6 +67,7 @@ struct CombinedResourceLayout {
 class PipelineLayout {
  public:
   PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout);
+~PipelineLayout();
 
   [[nodiscard]] DescriptorSetAllocator &GetDescriptorSetAllocator(uint32_t set) {
     VR_ASSERT(set < descriptor_set_allocators_.size());

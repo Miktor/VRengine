@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
 #include "common.hpp"
 
 namespace vre::rendering {
@@ -27,7 +28,8 @@ struct ImageViewCreateInfo {
 
 class ImageView {
  public:
-  ImageView(VkImageView view, ImageViewCreateInfo &&info);
+  ImageView(VkDevice device, VkImageView view, ImageViewCreateInfo &&info);
+  ~ImageView();
 
   ImageView(ImageView &) = delete;
   ImageView(ImageView &&) = delete;
@@ -38,9 +40,10 @@ class ImageView {
 
   [[nodiscard]] const ImageViewCreateInfo &GetCreateInfo() const { return info_; }
 
-  [[nodiscard]]  VkImageView GetRenderTargetView() const { return view_; }
+  [[nodiscard]] VkImageView GetRenderTargetView() const { return view_; }
 
  private:
+  VkDevice device_;
   VkImageView view_;
   const ImageViewCreateInfo info_;
 };
@@ -111,6 +114,7 @@ class Image {
   void SetSwapchainLayout(VkImageLayout layout) { swapchain_layout_ = layout; }
 
  private:
+  VkDevice device_;
   const ImageCreateInfo info_;
   ImageViewPtr view_;
 

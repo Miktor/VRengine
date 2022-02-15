@@ -167,6 +167,7 @@ void Application::MainLoop() {
 }
 
 void Application::Cleanup() {
+  main_scene_.Cleanup();
   render_core_.Cleanup();
 
   glfwDestroyWindow(window_);

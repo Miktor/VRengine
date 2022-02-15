@@ -53,11 +53,21 @@ UniformBufferPoolAllocator::UniformBufferPoolAllocator(RenderCore &render_core, 
 }
 
 UniformBufferPoolAllocator::~UniformBufferPoolAllocator() {
+  free_blocks_.clear();
   vmaDestroyPool(render_core_.GetVmaAllocator(), pool_);
 }
 
 std::shared_ptr<UniformBufferAllocation> UniformBufferPoolAllocator::Allocate(VkDeviceSize minimum_size) {
   VR_ASSERT(minimum_size <= block_size_);
+
+  for (auto it = free_blocks_.begin(); it != free_blocks_.end(); ++it) {
+    auto allocation = *it;
+    if (allocation->GetSize() >= minimum_size) {
+      allocation->Reset();
+      free_blocks_.erase(it);
+      return allocation;
+    }
+  }
 
   CreateBufferInfo create_info{};
   create_info.buffer_size = minimum_size;
@@ -67,6 +77,10 @@ std::shared_ptr<UniformBufferAllocation> UniformBufferPoolAllocator::Allocate(Vk
   auto buffer = render_core_.CreateBuffer(create_info);
 
   return std::make_shared<UniformBufferAllocation>(buffer, alignment_, block_size_);
+}
+
+void UniformBufferPoolAllocator::Deallocate(std::shared_ptr<UniformBufferAllocation> allocation) {
+  free_blocks_.push_back(allocation);
 }
 
 }  // namespace vre::rendering

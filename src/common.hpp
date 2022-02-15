@@ -30,4 +30,5 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "enumerate.hpp"
 #include "helpers.hpp"

@@ -24,7 +24,15 @@ VkRect2D GetScissors(const BeginRenderInfo &info) {
 
   return scissors;
 }
+
 }  // namespace
+
+CommandBuffer::~CommandBuffer() {
+  if (ubo_allocated_data_) {
+    auto &allocator = core_->GetUniformBufferPoolAllocator();
+    allocator.Deallocate(ubo_allocated_data_);
+  }
+}
 
 void CommandBuffer::Start() {
   VkCommandBufferBeginInfo begin_info{};

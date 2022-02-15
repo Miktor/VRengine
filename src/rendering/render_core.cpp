@@ -507,6 +507,8 @@ void RenderCore::CleanupSwapChain() {
 void RenderCore::Cleanup() {
   CleanupSwapChain();
 
+  ubo_allocator_.reset();
+
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
     vkDestroySemaphore(device_, render_finished_semaphores_[i], nullptr);
     vkDestroySemaphore(device_, image_available_semaphores_[i], nullptr);

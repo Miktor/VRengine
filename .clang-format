@@ -7,3 +7,4 @@ PointerAlignment: Right
 IncludeBlocks: Preserve
 
 CommentPragmas: "(@copydoc)"
+AllowShortFunctionsOnASingleLine: InlineOnly

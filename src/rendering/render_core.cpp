@@ -101,11 +101,13 @@ spdlog::level::level_enum GetSpdLogLevel(VkDebugUtilsMessageSeverityFlagBitsEXT 
   }
 };
 
+static uint32_t current_frame = 0;
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                                              VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
                                              const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                                              void * /*pUserData*/) {
-  spdlog::default_logger_raw()->log(GetSpdLogLevel(message_severity), p_callback_data->pMessage);
+  spdlog::default_logger_raw()->log(GetSpdLogLevel(message_severity), "Frame: {}: {}", current_frame,
+                                    p_callback_data->pMessage);
 
   return VK_FALSE;
 }
@@ -527,6 +529,7 @@ void RenderCore::CleanupSwapChain() {
                        command_buffers_.data());
 
   backbuffers_.clear();
+  framebuffers_.clear();
 
   vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 }
@@ -536,6 +539,7 @@ void RenderCore::Cleanup() {
 
   CleanupSwapChain();
 
+  render_pass_.reset();
   ubo_allocator_.reset();
 
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
@@ -768,6 +772,7 @@ void RenderCore::Present(RenderContext &context) {
   vkQueuePresentKHR(present_queue_, &present_info);
 
   current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
+  ++current_frame;
 }
 
 void RenderCore::WaitDeviceIdle() {

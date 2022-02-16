@@ -70,9 +70,9 @@ class CommandBuffer {
   RenderCore *core_ = nullptr;
   VkCommandBuffer command_buffer_;
   VkPipelineCache cache_;
-  
+
   GraphicsState state_;
-  std::shared_ptr<UniformBufferAllocation> ubo_allocated_data_ = nullptr;
+  std::shared_ptr<UniformBufferAllocation> ubo_allocated_data_;
 
  private:
   void BindDescriptorSet(uint32_t set);

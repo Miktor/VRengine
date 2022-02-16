@@ -174,9 +174,10 @@ Shader::~Shader() {
 PipelineLayout::PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout)
     : device_(device), resource_layout_(resource_layout) {
   constexpr uint32_t kSet = 0;
-  descriptor_set_allocators_.emplace_back(device_, resource_layout_.descriptor_set_layouts[kSet]);
+  descriptor_set_allocators_.push_back(
+      std::make_unique<DescriptorSetAllocator>(device_, resource_layout_.descriptor_set_layouts[kSet]));
 
-  auto layout = descriptor_set_allocators_.front().GetLayout();
+  auto layout = descriptor_set_allocators_.front()->GetLayout();
   VkPipelineLayoutCreateInfo pipeline_layout_info{};
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout_info.setLayoutCount = 1;

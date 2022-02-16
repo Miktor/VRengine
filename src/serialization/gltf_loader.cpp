@@ -15,8 +15,8 @@ namespace vre::serialization {
 
 namespace {
 
-void LoadMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, const std::shared_ptr<scene::Node> &node) {
-  auto new_mesh = std::make_shared<rendering::Mesh>();
+void LoadMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, scene::Node &node) {
+  auto new_mesh = std::make_unique<rendering::Mesh>();
 
   for (const auto &primitive : mesh.primitives) {
     std::vector<glm::vec3> vertex_buffer;
@@ -30,9 +30,11 @@ void LoadMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, const st
 
       const tinygltf::Accessor &pos_accessor = model.accessors[primitive.attributes.find("POSITION")->second];
       const tinygltf::BufferView &pos_view = model.bufferViews[pos_accessor.bufferView];
-      buffer_pos = reinterpret_cast<const float *>(&(model.buffers[pos_view.buffer].data[pos_accessor.byteOffset + pos_view.byteOffset]));
-      pos_byte_stride = pos_accessor.ByteStride(pos_view) != 0 ? (pos_accessor.ByteStride(pos_view) / sizeof(float))
-                                                               : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+      buffer_pos = reinterpret_cast<const float *>(
+          &(model.buffers[pos_view.buffer].data[pos_accessor.byteOffset + pos_view.byteOffset]));
+      pos_byte_stride = pos_accessor.ByteStride(pos_view) != 0
+                            ? (pos_accessor.ByteStride(pos_view) / sizeof(float))
+                            : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
       for (size_t v = 0; v < pos_accessor.count; v++) {
         vertex_buffer.push_back(glm::make_vec3(&buffer_pos[v * pos_byte_stride]));
@@ -79,33 +81,32 @@ void LoadMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, const st
     new_mesh->AddPrimitive(std::move(vertex_buffer), std::move(index_buffer));
   }
 
-  node->mesh_ = new_mesh;
+  node.mesh_ = std::move(new_mesh);
 }
 
-void LoadNode(std::vector<std::shared_ptr<scene::Node>> &root_nodes, const std::shared_ptr<scene::Node> &parent, const tinygltf::Node &node,
-              const tinygltf::Model &model) {
-  auto new_node = parent->CreateChildNode(node.name);
+void LoadNode(scene::Node &parent, const tinygltf::Node &node, const tinygltf::Model &model) {
+  auto &new_node = parent.CreateChildNode(node.name);
 
   // Generate local node matrix
   auto translation = glm::vec3(0.0F);
   if (node.translation.size() == 3) {
     translation = glm::make_vec3(node.translation.data());
-    new_node->transform_.position = translation;
+    new_node.transform_.position = translation;
   }
 
   if (node.rotation.size() == 4) {
     glm::quat q = glm::make_quat(node.rotation.data());
-    new_node->transform_.rotation = q;
+    new_node.transform_.rotation = q;
   }
 
   auto scale = glm::vec3(1.0F);
   if (node.scale.size() == 3) {
     scale = glm::make_vec3(node.scale.data());
-    new_node->transform_.scale = scale;
+    new_node.transform_.scale = scale;
   }
 
   for (const auto &child : node.children) {
-    LoadNode(root_nodes, new_node, model.nodes[child], model);
+    LoadNode(new_node, model.nodes[child], model);
   }
 
   // Node contains mesh data
@@ -113,17 +114,11 @@ void LoadNode(std::vector<std::shared_ptr<scene::Node>> &root_nodes, const std::
     const tinygltf::Mesh &mesh = model.meshes[node.mesh];
     LoadMesh(model, mesh, new_node);
   }
-
-  if (parent) {
-    parent->childrens_.push_back(new_node);
-  } else {
-    root_nodes.push_back(new_node);
-  }
 }
 
 }  // namespace
 
-std::vector<std::shared_ptr<scene::Node>> GLTFLoader::LoadFromFile(const std::string &filename) {
+std::unique_ptr<scene::Node> GLTFLoader::LoadFromFile(const std::string &filename) {
   tinygltf::Model gltf_model;
   tinygltf::TinyGLTF gltf_context;
   std::string error;
@@ -137,17 +132,18 @@ std::vector<std::shared_ptr<scene::Node>> GLTFLoader::LoadFromFile(const std::st
 
   const bool file_loaded = binary ? gltf_context.LoadBinaryFromFile(&gltf_model, &error, &warning, filename)
                                   : gltf_context.LoadASCIIFromFile(&gltf_model, &error, &warning, filename);
-  std::vector<std::shared_ptr<scene::Node>> root_nodes;
+  auto root_node = std::make_unique<scene::Node>();
   if (file_loaded) {
-    const tinygltf::Scene &scene = gltf_model.scenes[gltf_model.defaultScene > -1 ? gltf_model.defaultScene : 0];
+    const tinygltf::Scene &scene =
+        gltf_model.scenes[gltf_model.defaultScene > -1 ? gltf_model.defaultScene : 0];
     for (const auto &node : scene.nodes) {
-      LoadNode(root_nodes, nullptr, gltf_model.nodes[node], gltf_model);
+      LoadNode(*root_node, gltf_model.nodes[node], gltf_model);
     }
   } else {
     SPDLOG_ERROR("Could not load gltf file: {}", error);
   }
 
-  return root_nodes;
+  return std::move(root_node);
 }
 
 }  // namespace vre::serialization

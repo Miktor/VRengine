@@ -11,7 +11,7 @@ struct Node;
 namespace serialization {
 class GLTFLoader {
  public:
-  static std::vector<std::shared_ptr<scene::Node>> LoadFromFile(const std::string &filename);
+  static std::unique_ptr<scene::Node> LoadFromFile(const std::string &filename);
 };
 
 }  // namespace serialization

@@ -25,6 +25,10 @@ struct RenderData {
 };
 
 struct RenderContext {
+  RenderContext() = default;
+  RenderContext(RenderContext &) = delete;
+  RenderContext(RenderContext &&) = default;
+
   std::unique_ptr<CommandBuffer> command_buffer;
 
   VkSemaphore image_available_semaphore;

@@ -9,7 +9,11 @@ struct DescriptorSetLayout;
 
 class DescriptorSetAllocator {
  public:
+  DescriptorSetAllocator(DescriptorSetAllocator &) = delete;
+  DescriptorSetAllocator(DescriptorSetAllocator &&) = delete;
+
   DescriptorSetAllocator(VkDevice device, const DescriptorSetLayout &layout);
+  ~DescriptorSetAllocator();
 
   VkDescriptorSetLayout GetLayout() const { return descriptor_set_layout_; }
 

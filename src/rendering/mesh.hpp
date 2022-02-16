@@ -6,7 +6,7 @@
 #include "rendering/render_core.hpp"
 #include "rendering/shader.hpp"
 
-namespace vre ::rendering {
+namespace vre::rendering {
 
 class RenderCore;
 

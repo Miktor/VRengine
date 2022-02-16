@@ -1,8 +1,10 @@
 #pragma once
 
+#include <memory>
 #include "common.hpp"
 
 #include "scene/camera.hpp"
+#include "scene/node.hpp"
 
 namespace vre {
 
@@ -13,8 +15,6 @@ class RenderCore;
 
 namespace scene {
 
-struct Node;
-
 class Scene {
  public:
   void LoadFromFile();
@@ -24,15 +24,17 @@ class Scene {
   void Update();
   void Render(rendering::RenderContext &context);
 
-   void Cleanup();
+  void Cleanup();
 
-  std::shared_ptr<Node> GetRootNode();
-
-  std::shared_ptr<Node> main_camera_node_;
-  std::shared_ptr<Camera> main_camera_;
+  Node &GetRootNode();
+  Camera &GetMainCamera();
+  Node &GetMainCameraNode();
 
  private:
-  std::vector<std::shared_ptr<Node>> root_nodes_;
+  Node *main_camera_node_ = nullptr;
+  Camera *main_camera_ = nullptr;
+
+  std::unique_ptr<Node> root_node_;
 };
 
 }  // namespace scene

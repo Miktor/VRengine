@@ -8,13 +8,9 @@
 namespace vre::rendering {
 
 std::shared_ptr<Material> GetDefaultMaterial(VkDevice device) {
-  static std::shared_ptr<Material> kMaterial;
-  if (!kMaterial) {
-    kMaterial = std::make_shared<Material>(
-        device, std::make_shared<Shader>(device, Shader::kFragment, "assets/shaders/shader.frag"),
-        std::make_shared<Shader>(device, Shader::kVertex, "assets/shaders/shader.vert"));
-  }
-  return kMaterial;
+  return std::make_shared<Material>(
+      device, std::make_shared<Shader>(device, Shader::kFragment, "assets/shaders/shader.frag"),
+      std::make_shared<Shader>(device, Shader::kVertex, "assets/shaders/shader.vert"));
 }
 
 void Mesh::AddPrimitive(std::vector<glm::vec3> vert, const std::vector<uint32_t> &indicies) {
@@ -63,7 +59,7 @@ void Mesh::InitializeVulkan(RenderCore &renderer) {
 void Mesh::Render(rendering::RenderContext &context, const glm::mat4 &transform) {
   context.command_buffer->BindMaterial(*material_);
   context.command_buffer->BindVertexBuffers(0, *vertex_buffer_, 0, sizeof(glm::vec3),
-                                           VK_VERTEX_INPUT_RATE_VERTEX);
+                                            VK_VERTEX_INPUT_RATE_VERTEX);
   context.command_buffer->BindIndexBuffer(*index_buffer_, 0, VK_INDEX_TYPE_UINT32);
 
   // TODO: make it for each mesh

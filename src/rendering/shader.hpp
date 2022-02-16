@@ -77,7 +77,7 @@ class PipelineLayout {
 
   [[nodiscard]] DescriptorSetAllocator &GetDescriptorSetAllocator(uint32_t set) {
     VR_ASSERT(set < descriptor_set_allocators_.size());
-    return descriptor_set_allocators_[set];
+    return *descriptor_set_allocators_[set];
   }
 
   [[nodiscard]] VkDescriptorUpdateTemplateKHR &GetUpdateTemplate(uint32_t set) {
@@ -90,7 +90,7 @@ class PipelineLayout {
  private:
   VkDevice device_;
 
-  std::vector<DescriptorSetAllocator> descriptor_set_allocators_;
+  std::vector<std::unique_ptr<DescriptorSetAllocator>> descriptor_set_allocators_;
   std::vector<VkDescriptorUpdateTemplateKHR> descriptor_update_template_;
 
   VkPipelineLayout pipeline_layout_;

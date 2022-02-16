@@ -31,6 +31,11 @@ DescriptorSetAllocator::DescriptorSetAllocator(VkDevice device, const Descriptor
   CHECK_VK_SUCCESS(vkCreateDescriptorSetLayout(device_, &layout_info, nullptr, &descriptor_set_layout_));
 }
 
+DescriptorSetAllocator::~DescriptorSetAllocator() {
+  vkDestroyDescriptorPool(device_, pool_, nullptr);
+  vkDestroyDescriptorSetLayout(device_, descriptor_set_layout_, nullptr);
+}
+
 VkDescriptorSet DescriptorSetAllocator::GetSet() {
   if (descriptor_sets_.empty()) {
     VkDescriptorPoolCreateInfo info{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};

@@ -8,7 +8,7 @@
 namespace vre::platform {
 
 std::string Platform::ReadFile(const std::string &filename, bool throw_if_not_exists) {
-  std::ifstream file(filename, std::ios::binary);
+  std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
     if (throw_if_not_exists) {

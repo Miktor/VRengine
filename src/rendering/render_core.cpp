@@ -105,8 +105,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
                                              VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
                                              const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                                              void * /*pUserData*/) {
-  spdlog::default_logger_raw()->log(GetSpdLogLevel(message_severity), "validation layer: {}",
-                                    p_callback_data->pMessage);
+  spdlog::default_logger_raw()->log(GetSpdLogLevel(message_severity), p_callback_data->pMessage);
 
   return VK_FALSE;
 }

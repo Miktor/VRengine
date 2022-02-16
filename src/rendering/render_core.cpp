@@ -105,8 +105,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
                                              VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
                                              const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                                              void * /*pUserData*/) {
-  SPDLOG_LOGGER_CALL(spdlog::default_logger_raw(), GetSpdLogLevel(message_severity), "validation layer: {}",
-                     p_callback_data->pMessage);
+  spdlog::default_logger_raw()->log(GetSpdLogLevel(message_severity), "validation layer: {}",
+                                    p_callback_data->pMessage);
 
   return VK_FALSE;
 }
@@ -470,7 +470,8 @@ void InitVMA(VmaAllocator &allocator, VkInstance instance, VkPhysicalDevice phys
 
 }  // namespace
 
-RenderCore::RenderCore() {}
+RenderCore::RenderCore() {
+}
 
 void RenderCore::InitVulkan(GLFWwindow *window) {
   instance_ = CreateInstance();
@@ -527,7 +528,7 @@ void RenderCore::CleanupSwapChain() {
                        command_buffers_.data());
 
   backbuffers_.clear();
-  
+
   vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 }
 
@@ -678,7 +679,8 @@ RenderContext RenderCore::BeginDraw() {
 
   images_in_flight_[next_image_index_] = in_flight_fences_[current_frame_];
 
-  RenderContext context{std::make_unique<CommandBuffer>(this, command_buffers_[next_image_index_], pipeline_cache_)};
+  RenderContext context{
+      std::make_unique<CommandBuffer>(this, command_buffers_[next_image_index_], pipeline_cache_)};
 
   context.image_available_semaphore = image_available_semaphores_[current_frame_];
   context.render_finished_semaphore = render_finished_semaphores_[current_frame_];
@@ -769,7 +771,11 @@ void RenderCore::Present(RenderContext &context) {
   current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 }
 
-void RenderCore::WaitDeviceIdle() { vkDeviceWaitIdle(device_); }
+void RenderCore::WaitDeviceIdle() {
+  vkDeviceWaitIdle(device_);
+}
 
-UniformBufferPoolAllocator &RenderCore::GetUniformBufferPoolAllocator() { return *ubo_allocator_; }
+UniformBufferPoolAllocator &RenderCore::GetUniformBufferPoolAllocator() {
+  return *ubo_allocator_;
+}
 }  // namespace vre::rendering

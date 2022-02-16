@@ -39,7 +39,7 @@ class CommandBuffer {
   ~CommandBuffer();
 
   CommandBuffer(CommandBuffer &) = delete;
-  CommandBuffer(CommandBuffer &&) = default;
+  CommandBuffer(CommandBuffer &&) = delete;
 
   // TODO: delete
   VkCommandBuffer GetBuffer() { return command_buffer_; }
@@ -76,6 +76,8 @@ class CommandBuffer {
 
  private:
   void BindDescriptorSet(uint32_t set);
+
+  VkPipeline GetGraphicsPipeline();
   VkPipeline BuildGraphicsPipeline();
 };
 }  // namespace vre::rendering

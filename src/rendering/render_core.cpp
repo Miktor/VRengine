@@ -526,6 +526,8 @@ void RenderCore::CleanupSwapChain() {
   vkFreeCommandBuffers(device_, command_pool_, static_cast<uint32_t>(command_buffers_.size()),
                        command_buffers_.data());
 
+  backbuffers_.clear();
+  
   vkDestroySwapchainKHR(device_, swap_chain_, nullptr);
 }
 
@@ -676,14 +678,14 @@ RenderContext RenderCore::BeginDraw() {
 
   images_in_flight_[next_image_index_] = in_flight_fences_[current_frame_];
 
-  RenderContext context{CommandBuffer(this, command_buffers_[next_image_index_], pipeline_cache_)};
+  RenderContext context{std::make_unique<CommandBuffer>(this, command_buffers_[next_image_index_], pipeline_cache_)};
 
   context.image_available_semaphore = image_available_semaphores_[current_frame_];
   context.render_finished_semaphore = render_finished_semaphores_[current_frame_];
   context.in_flight_fence = in_flight_fences_[current_frame_];
   context.images_in_flight = images_in_flight_[next_image_index_];
 
-  context.command_buffer.Start();
+  context.command_buffer->Start();
 
   BeginRenderInfo begin_render_info{};
   begin_render_info.render_pass_info = CreateDefaultRenderPass(backbuffers_[next_image_index_].GetView());
@@ -700,7 +702,7 @@ RenderContext RenderCore::BeginDraw() {
   }
   begin_render_info.framebuffer = framebuffers_[next_image_index_];
 
-  context.command_buffer.BeginRenderPass(begin_render_info);
+  context.command_buffer->BeginRenderPass(begin_render_info);
 
   VkViewport viewport{};
   viewport.x = 0.0F;
@@ -709,18 +711,18 @@ RenderContext RenderCore::BeginDraw() {
   viewport.height = static_cast<float>(swap_chain_extent_.height);
   viewport.minDepth = 0.0F;
   viewport.maxDepth = 1.0F;
-  context.command_buffer.SetViewport(viewport);
+  context.command_buffer->SetViewport(viewport);
 
   VkRect2D scissor{};
   scissor.offset = {0, 0};
   scissor.extent = swap_chain_extent_;
-  context.command_buffer.SetScissors(scissor);
+  context.command_buffer->SetScissors(scissor);
 
   return context;
 }
 
 void RenderCore::Present(RenderContext &context) {
-  const auto cmd_buffer = context.command_buffer.GetBuffer();
+  const auto cmd_buffer = context.command_buffer->GetBuffer();
 
   vkCmdEndRenderPass(cmd_buffer);
 

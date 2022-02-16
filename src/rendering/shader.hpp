@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
+#include <memory>
 #include <vector>
 #include "common.hpp"
 
@@ -46,7 +48,7 @@ class Shader {
   ~Shader();
 
   Shader(Shader &) = delete;
-  Shader(Shader &&) = default;
+  Shader(Shader &&) = delete;
 
   [[nodiscard]] VkShaderModule GetShaderModule() const { return shader_module_; }
   [[nodiscard]] const ResourceLayout &GetResourceLayout() const { return resource_layout_; }
@@ -58,7 +60,6 @@ class Shader {
   const Type type_;
 
   ResourceLayout resource_layout_;
-
   VkShaderModule shader_module_;
 };
 
@@ -70,6 +71,9 @@ class PipelineLayout {
  public:
   PipelineLayout(VkDevice device, const CombinedResourceLayout &resource_layout);
   ~PipelineLayout();
+
+  PipelineLayout(PipelineLayout &) = delete;
+  PipelineLayout(PipelineLayout &&) = delete;
 
   [[nodiscard]] DescriptorSetAllocator &GetDescriptorSetAllocator(uint32_t set) {
     VR_ASSERT(set < descriptor_set_allocators_.size());
@@ -95,7 +99,11 @@ class PipelineLayout {
 
 class Material {
  public:
-  Material(VkDevice device, Shader &&fragment, Shader &&vertex);
+  Material(VkDevice device, std::shared_ptr<Shader> fragment, std::shared_ptr<Shader> vertex);
+  ~Material();
+
+  Material(Material &) = delete;
+  Material(Material &&) = delete;
 
   [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const;
   [[nodiscard]] std::tuple<std::vector<VkVertexInputBindingDescription>,
@@ -104,14 +112,21 @@ class Material {
 
   [[nodiscard]] PipelineLayout &GetPipelineLayout();
 
+  [[nodiscard]] VkPipeline GetPipeline() { return pipeline_; }
+  void SetPipeline(VkPipeline pipeline) {
+    VR_ASSERT(pipeline_ == VK_NULL_HANDLE);
+    pipeline_ = pipeline;
+  }
+
  private:
   VkDevice device_;
 
-  Shader fragment_;
-  Shader vertex_;
+  std::shared_ptr<Shader> fragment_;
+  std::shared_ptr<Shader> vertex_;
 
   CombinedResourceLayout combined_resource_layout_;
   std::shared_ptr<PipelineLayout> pipeline_layout_;
+  VkPipeline pipeline_ = VK_NULL_HANDLE;
 };
 
 }  // namespace vre::rendering

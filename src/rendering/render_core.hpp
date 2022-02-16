@@ -25,7 +25,7 @@ struct RenderData {
 };
 
 struct RenderContext {
-  CommandBuffer command_buffer;
+  std::unique_ptr<CommandBuffer> command_buffer;
 
   VkSemaphore image_available_semaphore;
   VkSemaphore render_finished_semaphore;
@@ -97,7 +97,7 @@ class RenderCore {
  private:
   void InitPipelineCache();
   void SaveAndDestroyPipelineCache();
-  
+
   void CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &indices);
   void CreateImageViews();
   void CreateSyncObjects();

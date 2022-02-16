@@ -75,7 +75,9 @@ void CommandBuffer::SetViewport(const VkViewport &viewport) {
   vkCmdSetViewport(command_buffer_, 0, 1, &viewport);
 }
 
-void CommandBuffer::SetScissors(const VkRect2D &scissor) { vkCmdSetScissor(command_buffer_, 0, 1, &scissor); }
+void CommandBuffer::SetScissors(const VkRect2D &scissor) {
+  vkCmdSetScissor(command_buffer_, 0, 1, &scissor);
+}
 
 void CommandBuffer::SetDescriptorSet(uint8_t set, VkDescriptorSet descriptor_set) {
   state_.descriptor_sets[set] = descriptor_set;
@@ -121,12 +123,14 @@ void CommandBuffer::AllocateUniformBuffer(uint32_t set, uint32_t binding, const 
   memcpy(ubo_allocated_data_->GetBuffer().GetMappedData(), data, size);
 }
 
-void CommandBuffer::BindMaterial(Material &material) { state_.material = &material; }
+void CommandBuffer::BindMaterial(Material &material) {
+  state_.material = &material;
+}
 
 void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index,
                                 int32_t vertex_offset, uint32_t first_instance) {
   BindDescriptorSet(0);
-  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, BuildGraphicsPipeline());
+  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, GetGraphicsPipeline());
   vkCmdDrawIndexed(command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
@@ -157,6 +161,17 @@ void CommandBuffer::BindDescriptorSet(uint32_t set) {
   vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           pipeline_layout.GetPipelineLayout(), set, 1, &descriptor_set,
                           dynamic_offsets.size(), dynamic_offsets.data());
+}
+
+VkPipeline CommandBuffer::GetGraphicsPipeline() {
+  VR_ASSERT(state_.material);
+
+  if (auto pipeline = state_.material->GetPipeline(); pipeline != VK_NULL_HANDLE) {
+    return pipeline;
+  }
+  auto pipeline = BuildGraphicsPipeline();
+  state_.material->SetPipeline(pipeline);
+  return pipeline;
 }
 
 VkPipeline CommandBuffer::BuildGraphicsPipeline() {

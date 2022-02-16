@@ -12,6 +12,7 @@
 
 #include "common.hpp"
 #include "platform/platform.hpp"
+#include "shaderc/shaderc.h"
 
 namespace vre::rendering {
 
@@ -30,7 +31,11 @@ shaderc::SpvCompilationResult Compile(const std::string &data, const std::string
   shaderc::Compiler compiler;
   shaderc::CompileOptions options;
 
-  // options.SetOptimizationLevel(shaderc_optimization_level_size);
+  options.SetOptimizationLevel(shaderc_optimization_level_performance);
+
+#ifndef NDEBUG
+  options.SetGenerateDebugInfo();
+#endif
 
   auto result = compiler.CompileGlslToSpv(data, ToShadercType(type), path.data(), options);
 
@@ -214,23 +219,29 @@ PipelineLayout::~PipelineLayout() {
   vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
 }
 
-Material::Material(VkDevice device, Shader &&fragment, Shader &&vertex)
-    : device_(device), fragment_(std::move(fragment)), vertex_(std::move(vertex)) {
-  combined_resource_layout_ = BuildCombinedResourceLayout(fragment_, vertex_);
+Material::Material(VkDevice device, std::shared_ptr<Shader> fragment, std::shared_ptr<Shader> vertex)
+    : device_(device), fragment_(fragment), vertex_(vertex) {
+  combined_resource_layout_ = BuildCombinedResourceLayout(*fragment_, *vertex_);
   pipeline_layout_ = std::make_shared<PipelineLayout>(device_, combined_resource_layout_);
+}
+
+Material::~Material() {
+  if (pipeline_ != VK_NULL_HANDLE) {
+    vkDestroyPipeline(device_, pipeline_, nullptr);
+  }
 }
 
 std::vector<VkPipelineShaderStageCreateInfo> Material::GetShaderStages() const {
   VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
   vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-  vert_shader_stage_info.module = vertex_.GetShaderModule();
+  vert_shader_stage_info.module = vertex_->GetShaderModule();
   vert_shader_stage_info.pName = "main";
 
   VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
   frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  frag_shader_stage_info.module = fragment_.GetShaderModule();
+  frag_shader_stage_info.module = fragment_->GetShaderModule();
   frag_shader_stage_info.pName = "main";
 
   return {vert_shader_stage_info, frag_shader_stage_info};
@@ -238,7 +249,7 @@ std::vector<VkPipelineShaderStageCreateInfo> Material::GetShaderStages() const {
 
 std::tuple<std::vector<VkVertexInputBindingDescription>, std::vector<VkVertexInputAttributeDescription>>
 Material::GetInputBindings() const {
-  return std::make_tuple(GetBindingDescription(vertex_), GetAttributeDescriptions(vertex_));
+  return std::make_tuple(GetBindingDescription(*vertex_), GetAttributeDescriptions(*vertex_));
 }
 
 PipelineLayout &Material::GetPipelineLayout() {

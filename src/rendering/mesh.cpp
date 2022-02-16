@@ -10,9 +10,9 @@ namespace vre::rendering {
 std::shared_ptr<Material> GetDefaultMaterial(VkDevice device) {
   static std::shared_ptr<Material> kMaterial;
   if (!kMaterial) {
-    kMaterial =
-        std::make_shared<Material>(device, Shader(device, Shader::kFragment, "assets/shaders/shader.frag"),
-                                   Shader(device, Shader::kVertex, "assets/shaders/shader.vert"));
+    kMaterial = std::make_shared<Material>(
+        device, std::make_shared<Shader>(device, Shader::kFragment, "assets/shaders/shader.frag"),
+        std::make_shared<Shader>(device, Shader::kVertex, "assets/shaders/shader.vert"));
   }
   return kMaterial;
 }
@@ -61,10 +61,10 @@ void Mesh::InitializeVulkan(RenderCore &renderer) {
 }
 
 void Mesh::Render(rendering::RenderContext &context, const glm::mat4 &transform) {
-  context.command_buffer.BindMaterial(*material_);
-  context.command_buffer.BindVertexBuffers(0, *vertex_buffer_, 0, sizeof(glm::vec3),
+  context.command_buffer->BindMaterial(*material_);
+  context.command_buffer->BindVertexBuffers(0, *vertex_buffer_, 0, sizeof(glm::vec3),
                                            VK_VERTEX_INPUT_RATE_VERTEX);
-  context.command_buffer.BindIndexBuffer(*index_buffer_, 0, VK_INDEX_TYPE_UINT32);
+  context.command_buffer->BindIndexBuffer(*index_buffer_, 0, VK_INDEX_TYPE_UINT32);
 
   // TODO: make it for each mesh
   {
@@ -73,12 +73,12 @@ void Mesh::Render(rendering::RenderContext &context, const glm::mat4 &transform)
     data.view = context.render_data.camera_view;
     data.proj = context.render_data.camera_projection;
 
-    context.command_buffer.AllocateUniformBuffer(0, 0, sizeof(data), &data);
+    context.command_buffer->AllocateUniformBuffer(0, 0, sizeof(data), &data);
   }
 
   // TODO(dmitrygladky): normal primitive rendering
   for (const auto &primitive : primitives_) {
-    context.command_buffer.DrawIndexed(static_cast<uint32_t>(primitive.index_count), 1, 0, 0, 0);
+    context.command_buffer->DrawIndexed(static_cast<uint32_t>(primitive.index_count), 1, 0, 0, 0);
   }
 }
 

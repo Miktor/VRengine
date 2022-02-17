@@ -21,14 +21,32 @@ struct BeginRenderInfo {
 };
 
 struct GraphicsState {
-  bool is_wireframe = false;
+  struct {
+    void Reset() {
+      is_wireframe = false;
+      render_pass.reset();
+    }
 
-  std::shared_ptr<RenderPass> render_pass;
+    bool is_wireframe = false;
+    std::shared_ptr<RenderPass> render_pass;
+  } transient;
 
-  std::unordered_map<uint32_t, VkDescriptorSet> descriptor_sets;
-  Material *material = nullptr;
+  struct {
+    void Reset() {
+      descriptor_sets.clear();
+      material = nullptr;
+      resource_bindings.clear();
+    }
 
-  ResourceBindings resource_bindings;
+    std::unordered_map<uint32_t, VkDescriptorSet> descriptor_sets;
+    Material *material = nullptr;
+    ResourceBindings resource_bindings;
+  } per_draw;
+
+  void Reset() {
+    transient.Reset();
+    per_draw.Reset();
+  }
 };
 
 class CommandBuffer {
@@ -75,8 +93,8 @@ class CommandBuffer {
   std::shared_ptr<UniformBufferAllocation> ubo_allocated_data_;
 
  private:
+  void FlushState();
   void BindDescriptorSet(uint32_t set);
-
   VkPipeline GetGraphicsPipeline();
   VkPipeline BuildGraphicsPipeline();
 };

@@ -485,8 +485,10 @@ void RenderCore::InitVulkan(GLFWwindow *window) {
 
   InitVMA(vma_allocator_, instance_, physical_device_, device_);
 
-  ubo_allocator_ =
-      std::make_unique<UniformBufferPoolAllocator>(*this, 256 * 1024, 16, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+  constexpr VkDeviceSize kMinUniformBufferOffsetAlignment = 0x100;
+  constexpr VkDeviceSize kUniformBufferSize = kMinUniformBufferOffsetAlignment * 1024;
+  ubo_allocator_ = std::make_unique<UniformBufferPoolAllocator>(
+      *this, kUniformBufferSize, kMinUniformBufferOffsetAlignment, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
   vkGetDeviceQueue(device_, indices.graphics_family.value(), 0, &graphics_queue_);
   vkGetDeviceQueue(device_, indices.present_family.value(), 0, &present_queue_);

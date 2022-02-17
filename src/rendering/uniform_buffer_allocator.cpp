@@ -70,7 +70,7 @@ std::shared_ptr<UniformBufferAllocation> UniformBufferPoolAllocator::Allocate(Vk
   }
 
   CreateBufferInfo create_info{};
-  create_info.buffer_size = minimum_size;
+  create_info.buffer_size = block_size_;
   create_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   create_info.memory_usage = VMA_MEMORY_USAGE_CPU_ONLY;
   create_info.pool = pool_;

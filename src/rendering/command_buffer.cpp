@@ -44,6 +44,8 @@ void CommandBuffer::Start() {
 }
 
 void CommandBuffer::BeginRenderPass(const BeginRenderInfo &info) {
+  state_.Reset();
+
   std::vector<VkClearValue> clear_values;
   clear_values.resize(info.render_pass_info.color_attachments.size());
   uint32_t num_clear_values = 0;
@@ -68,7 +70,7 @@ void CommandBuffer::BeginRenderPass(const BeginRenderInfo &info) {
 
   vkCmdBeginRenderPass(command_buffer_, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-  state_.render_pass = info.render_pass;
+  state_.transient.render_pass = info.render_pass;
 }
 
 void CommandBuffer::SetViewport(const VkViewport &viewport) {
@@ -80,29 +82,29 @@ void CommandBuffer::SetScissors(const VkRect2D &scissor) {
 }
 
 void CommandBuffer::SetDescriptorSet(uint8_t set, VkDescriptorSet descriptor_set) {
-  state_.descriptor_sets[set] = descriptor_set;
+  state_.per_draw.descriptor_sets[set] = descriptor_set;
 }
 
 void CommandBuffer::BindVertexBuffers(uint32_t binding, const Buffer &buffer, VkDeviceSize offset,
                                       VkDeviceSize stride, VkVertexInputRate step_rate) {
-  VR_ASSERT(state_.material);  // TODO: check correct buffer
+  VR_ASSERT(state_.per_draw.material);  // TODO: check correct buffer
 
   const auto vk_buffer = buffer.GetBuffer();
   vkCmdBindVertexBuffers(command_buffer_, binding, 1, &vk_buffer, &offset);
 }
 
 void CommandBuffer::BindIndexBuffer(const Buffer &buffer, VkDeviceSize offset, VkIndexType index_type) {
-  VR_ASSERT(state_.material);
+  VR_ASSERT(state_.per_draw.material);
 
   vkCmdBindIndexBuffer(command_buffer_, buffer.GetBuffer(), offset, index_type);
 }
 
 void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer,
                                       const VkDeviceSize offset, const VkDeviceSize size) {
-  VR_ASSERT(state_.material);
+  VR_ASSERT(state_.per_draw.material);
 
-  state_.resource_bindings[set].push_back({});
-  auto &resource_binding = state_.resource_bindings[set].back();
+  state_.per_draw.resource_bindings[set].push_back({});
+  auto &resource_binding = state_.per_draw.resource_bindings[set].back();
   resource_binding.buffer = buffer.GetBuffer();
   resource_binding.offset = offset;
   resource_binding.size = size;
@@ -124,21 +126,26 @@ void CommandBuffer::AllocateUniformBuffer(uint32_t set, uint32_t binding, const 
 }
 
 void CommandBuffer::BindMaterial(Material &material) {
-  state_.material = &material;
+  state_.per_draw.material = &material;
 }
 
 void CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index,
                                 int32_t vertex_offset, uint32_t first_instance) {
-  BindDescriptorSet(0);
-  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, GetGraphicsPipeline());
+  FlushState();
   vkCmdDrawIndexed(command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
-void CommandBuffer::BindDescriptorSet(uint32_t set) {
-  VR_ASSERT(state_.material);
+void CommandBuffer::FlushState() {
+  BindDescriptorSet(0);
+  vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, GetGraphicsPipeline());
+  state_.per_draw.Reset();
+}
 
-  auto &pipeline_layout = state_.material->GetPipelineLayout();
-  if (const auto &descriptor_sets = state_.descriptor_sets;
+void CommandBuffer::BindDescriptorSet(uint32_t set) {
+  VR_ASSERT(state_.per_draw.material);
+
+  auto &pipeline_layout = state_.per_draw.material->GetPipelineLayout();
+  if (const auto &descriptor_sets = state_.per_draw.descriptor_sets;
       descriptor_sets.find(set) != descriptor_sets.end()) {
     vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipeline_layout.GetPipelineLayout(), set, 1, &descriptor_sets.find(set)->second,
@@ -147,7 +154,7 @@ void CommandBuffer::BindDescriptorSet(uint32_t set) {
   }
 
   std::vector<uint32_t> dynamic_offsets;
-  for (const auto &resource_binding : state_.resource_bindings[set]) {
+  for (const auto &resource_binding : state_.per_draw.resource_bindings[set]) {
     dynamic_offsets.push_back(resource_binding.offset);
   }
 
@@ -156,26 +163,28 @@ void CommandBuffer::BindDescriptorSet(uint32_t set) {
 
   auto update_template = pipeline_layout.GetUpdateTemplate(set);
   vkUpdateDescriptorSetWithTemplate(core_->GetDevice(), descriptor_set, update_template,
-                                    state_.resource_bindings[set].data());
+                                    state_.per_draw.resource_bindings[set].data());
 
   vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           pipeline_layout.GetPipelineLayout(), set, 1, &descriptor_set,
                           dynamic_offsets.size(), dynamic_offsets.data());
+
+  dynamic_offsets.clear();
 }
 
 VkPipeline CommandBuffer::GetGraphicsPipeline() {
-  VR_ASSERT(state_.material);
+  VR_ASSERT(state_.per_draw.material);
 
-  if (auto pipeline = state_.material->GetPipeline(); pipeline != VK_NULL_HANDLE) {
+  if (auto pipeline = state_.per_draw.material->GetPipeline(); pipeline != VK_NULL_HANDLE) {
     return pipeline;
   }
   auto pipeline = BuildGraphicsPipeline();
-  state_.material->SetPipeline(pipeline);
+  state_.per_draw.material->SetPipeline(pipeline);
   return pipeline;
 }
 
 VkPipeline CommandBuffer::BuildGraphicsPipeline() {
-  VR_ASSERT(state_.material);
+  VR_ASSERT(state_.per_draw.material);
 
   VkPipelineInputAssemblyStateCreateInfo input_assembly{};
   input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -200,7 +209,7 @@ VkPipeline CommandBuffer::BuildGraphicsPipeline() {
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizer.depthClampEnable = VK_FALSE;
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
-  rasterizer.polygonMode = state_.is_wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+  rasterizer.polygonMode = state_.transient.is_wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0F;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -227,7 +236,7 @@ VkPipeline CommandBuffer::BuildGraphicsPipeline() {
   color_blending.blendConstants[2] = 0.0F;
   color_blending.blendConstants[3] = 0.0F;
 
-  auto [binding_descriptions, attribute_descriptions] = state_.material->GetInputBindings();
+  auto [binding_descriptions, attribute_descriptions] = state_.per_draw.material->GetInputBindings();
 
   VkPipelineVertexInputStateCreateInfo vertex_input_info{};
   vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -236,7 +245,7 @@ VkPipeline CommandBuffer::BuildGraphicsPipeline() {
   vertex_input_info.pVertexBindingDescriptions = binding_descriptions.data();
   vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
 
-  auto shader_stages = state_.material->GetShaderStages();
+  auto shader_stages = state_.per_draw.material->GetShaderStages();
   VkGraphicsPipelineCreateInfo pipeline_info{};
   pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
   pipeline_info.stageCount = shader_stages.size();
@@ -248,8 +257,8 @@ VkPipeline CommandBuffer::BuildGraphicsPipeline() {
   pipeline_info.pRasterizationState = &rasterizer;
   pipeline_info.pMultisampleState = &multisampling;
   pipeline_info.pColorBlendState = &color_blending;
-  pipeline_info.layout = state_.material->GetPipelineLayout().GetPipelineLayout();
-  pipeline_info.renderPass = state_.render_pass->GetRenderPass();
+  pipeline_info.layout = state_.per_draw.material->GetPipelineLayout().GetPipelineLayout();
+  pipeline_info.renderPass = state_.transient.render_pass->GetRenderPass();
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 

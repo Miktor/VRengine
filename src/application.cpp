@@ -104,7 +104,7 @@ void Application::InitWindow() {
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
+  
   window_ = glfwCreateWindow(kWidth, kHeight, "Vulkan", nullptr, nullptr);
 
   glfwSetWindowUserPointer(window_, this);

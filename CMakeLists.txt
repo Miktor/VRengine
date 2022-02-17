@@ -15,11 +15,10 @@ set(CMAKE_CXX_EXTENSIONS off)
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_definitions(-DWIN32_LEAN_AND_MEAN)
 ELSEIF(APPLE)
-    add_compile_options ( "-Wno-nullability-extension" "-Wno-missing-field-initializers" "-Wno-nullability-completeness")  ## "-Wall" "-Wextra" "-Wpedantic" "-Werror"
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_MACOS_MVK")
-    add_compile_options(-Wno-macro-redefined)
-    set(CMAKE_EXE_LINKER_FLAGS "-Wl,-export_dynamic")
 ENDIF()
+
+add_compile_options("-Wno-nullability-extension" "-Wno-nullability-completeness")
 
 IF(MSVC)
     add_definitions(-DNOMINMAX)
@@ -42,6 +41,11 @@ file(GLOB_RECURSE SOURCES
 AUX_SOURCE_DIRECTORY(src SOURCES)
 
 add_library(vrengine_core OBJECT ${SOURCES})
+
+target_compile_options (vrengine_core PRIVATE 
+    "-Wno-nullability-extension" "-Wno-missing-field-initializers" "-Wno-nullability-completeness" "-Wno-macro-redefined"
+    "-Wall" "-Wextra" "-Wpedantic"
+)
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_compile_definitions(vrengine_core PUBLIC VK_USE_PLATFORM_WIN32_KHR)

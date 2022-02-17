@@ -1,5 +1,6 @@
 #include <memory>
 #include <vector>
+#include "helpers.hpp"
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -24,9 +25,8 @@ void LoadMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, scene::N
       const float *buffer_pos = nullptr;
 
       int pos_byte_stride;
-      int joint_component_type;
 
-      assert(primitive.attributes.find("POSITION") != primitive.attributes.end());
+      VR_ASSERT(primitive.attributes.find("POSITION") != primitive.attributes.end());
 
       const tinygltf::Accessor &pos_accessor = model.accessors[primitive.attributes.find("POSITION")->second];
       const tinygltf::BufferView &pos_view = model.bufferViews[pos_accessor.bufferView];
@@ -143,7 +143,7 @@ std::unique_ptr<scene::Node> GLTFLoader::LoadFromFile(const std::string &filenam
     SPDLOG_ERROR("Could not load gltf file: {}", error);
   }
 
-  return std::move(root_node);
+  return root_node;
 }
 
 }  // namespace vre::serialization

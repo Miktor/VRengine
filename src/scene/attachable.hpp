@@ -2,7 +2,7 @@
 
 namespace vre::scene {
 
-class Node;
+struct Node;
 
 class Attachable {
  public:

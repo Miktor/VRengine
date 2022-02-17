@@ -31,8 +31,7 @@ constexpr int kMaxFramesInFlight = 2;
 
 const std::vector<const char *> kValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
-const std::vector<const char *> kDeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                                                     "VK_KHR_portability_subset"};
+const std::vector<const char *> kDeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 #ifdef NDEBUG
 constexpr bool kEnableValidationLayers = false;
@@ -194,9 +193,7 @@ VkDebugUtilsMessengerEXT SetupDebugMessenger(VkInstance instance) {
   PopulateDebugMessengerCreateInfo(create_info);
 
   VkDebugUtilsMessengerEXT debug_messenger;
-  if (CreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, &debug_messenger) != VK_SUCCESS) {
-    throw std::runtime_error("failed to set up debug messenger!");
-  }
+  CHECK_VK_SUCCESS (CreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, &debug_messenger) ) ;
 
   return debug_messenger;
 }
@@ -309,7 +306,7 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
   std::vector<VkPhysicalDevice> devices(device_count);
   vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
 
-  VkPhysicalDevice physical_device;
+  VkPhysicalDevice physical_device= VK_NULL_HANDLE;
   for (const auto &device : devices) {
     if (IsDeviceSuitable(device, surface)) {
       physical_device = device;
@@ -362,9 +359,7 @@ auto CreateLogicalDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
   }
 
   VkDevice device;
-  if (vkCreateDevice(physical_device, &create_info, nullptr, &device) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create logical device_!");
-  }
+  CHECK_VK_SUCCESS(vkCreateDevice(physical_device, &create_info, nullptr, &device));
 
   return std::make_tuple(device, indices);
 }
@@ -416,9 +411,7 @@ VkCommandPool CreateCommandPool(VkDevice device, const QueueFamilyIndices &queue
   pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
   VkCommandPool command_pool;
-  if (vkCreateCommandPool(device, &pool_info, nullptr, &command_pool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create command pool!");
-  }
+  CHECK_VK_SUCCESS(vkCreateCommandPool(device, &pool_info, nullptr, &command_pool));
 
   return command_pool;
 }
@@ -433,9 +426,7 @@ std::vector<VkCommandBuffer> AllocateCommandBuffers(uint8_t count, VkDevice devi
   alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   alloc_info.commandBufferCount = static_cast<uint32_t>(command_buffers.size());
 
-  if (vkAllocateCommandBuffers(device, &alloc_info, command_buffers.data()) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate command buffers!");
-  }
+  CHECK_VK_SUCCESS(vkAllocateCommandBuffers(device, &alloc_info, command_buffers.data()));
 
   return command_buffers;
 }

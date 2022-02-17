@@ -1,12 +1,14 @@
-#include <execinfo.h>
-#include <signal.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <memory>
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "application.hpp"
+
+#ifndef _WINDOWS
+#include <execinfo.h>
+#include <unistd.h>
+#include <signal.h>
 
 void Handler(int sig) {
   void *array[10];
@@ -17,6 +19,7 @@ void Handler(int sig) {
   backtrace_symbols_fd(array, size, STDERR_FILENO);
   exit(sig);
 }
+#endif
 
 int main(const int /*argc*/, const char ** /*argv[]*/) {
   //signal(SIGSEGV, Handler);

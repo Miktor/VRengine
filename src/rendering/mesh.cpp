@@ -69,7 +69,7 @@ void Mesh::Render(rendering::RenderContext &context, const glm::mat4 &transform)
     data.view = context.render_data.camera_view;
     data.proj = context.render_data.camera_projection;
 
-    context.command_buffer->AllocateUniformBuffer(0, 0, sizeof(data), &data);
+    context.command_buffer->AllocateUniformBuffer(0, 0, data);
   }
 
   // TODO(dmitrygladky): normal primitive rendering

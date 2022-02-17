@@ -77,6 +77,10 @@ class CommandBuffer {
   void BindUniformBuffer(uint32_t set, uint32_t binding, const Buffer &buffer, const VkDeviceSize offset,
                          const VkDeviceSize size);
 
+  template <typename T>
+  void AllocateUniformBuffer(uint32_t set, uint32_t binding, const T data) {
+    AllocateUniformBuffer(set, binding, sizeof(data), &data);
+  }
   void AllocateUniformBuffer(uint32_t set, uint32_t binding, const VkDeviceSize size, const void *data);
 
   void BindMaterial(Material &material);

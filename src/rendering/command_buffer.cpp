@@ -122,7 +122,8 @@ void CommandBuffer::AllocateUniformBuffer(uint32_t set, uint32_t binding, const 
   auto allocation = ubo_allocated_data_->Allocate(size);
   BindUniformBuffer(set, binding, ubo_allocated_data_->GetBuffer(), allocation.offset, allocation.size);
 
-  memcpy(ubo_allocated_data_->GetBuffer().GetMappedData(), data, size);
+  memcpy(reinterpret_cast<uint8_t *>(ubo_allocated_data_->GetBuffer().GetMappedData()) + allocation.offset,
+         data, size);
 }
 
 void CommandBuffer::BindMaterial(Material &material) {

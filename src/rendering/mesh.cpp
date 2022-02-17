@@ -62,7 +62,6 @@ void Mesh::Render(rendering::RenderContext &context, const glm::mat4 &transform)
                                             VK_VERTEX_INPUT_RATE_VERTEX);
   context.command_buffer->BindIndexBuffer(*index_buffer_, 0, VK_INDEX_TYPE_UINT32);
 
-  // TODO: make it for each mesh
   {
     rendering::UniformBufferObject data{};
     data.model = transform;

@@ -18,7 +18,6 @@ ELSEIF(APPLE)
 ENDIF()
 
 IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options(-std=c++17)
     add_compile_options("-Wno-nullability-extension" "-Wno-nullability-completeness")
 ENDIF()
 

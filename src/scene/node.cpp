@@ -20,8 +20,8 @@ Attachable &Node::Attach(std::unique_ptr<Attachable> &&attachable) {
 
 glm::mat4 Node::GetTransform() {
   auto transform = glm::translate(glm::mat4(1.0f), transform_.position);
-  transform *= glm::toMat4(transform_.rotation);
   transform *= glm::scale(transform, transform_.scale);
+  transform *= glm::toMat4(transform_.rotation);
   return transform;
 }
 

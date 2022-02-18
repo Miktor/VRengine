@@ -192,7 +192,7 @@ PipelineLayout::PipelineLayout(VkDevice device, const CombinedResourceLayout &re
     update_entry.dstBinding = binding.binding;
     update_entry.dstArrayElement = 0;
     update_entry.descriptorCount = 1;
-    update_entry.offset = offsetof(ResourceBinding, buffer) + sizeof(ResourceBinding) * binding.binding;
+    update_entry.offset = offsetof(ResourceBinding, buffer_info) + sizeof(ResourceBinding) * binding.binding;
     update_entry.stride = sizeof(ResourceBinding);
     update_entries.push_back(update_entry);
   }

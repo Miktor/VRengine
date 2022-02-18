@@ -29,9 +29,8 @@ struct ResourceLayout {
 };
 
 struct ResourceBinding {
-  VkBuffer buffer;
-  VkDeviceSize offset;
-  VkDeviceSize size;
+  VkDescriptorBufferInfo buffer_info;
+  uint32_t dynamic_offset = 0;
 };
 
 using SetResourceBindings = std::vector<ResourceBinding>;

@@ -103,11 +103,13 @@ void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buff
                                       const VkDeviceSize offset, const VkDeviceSize size) {
   VR_ASSERT(state_.per_draw.material);
 
-  state_.per_draw.resource_bindings[set].push_back({});
-  auto &resource_binding = state_.per_draw.resource_bindings[set].back();
-  resource_binding.buffer = buffer.GetBuffer();
-  resource_binding.offset = offset;
-  resource_binding.size = size;
+  ResourceBinding resource_binding{};
+  resource_binding.buffer_info.buffer = buffer.GetBuffer();
+  resource_binding.buffer_info.offset = 0;
+  resource_binding.buffer_info.range = size;
+  resource_binding.dynamic_offset = offset;
+
+  state_.per_draw.resource_bindings[set].push_back(resource_binding);
 }
 
 void CommandBuffer::AllocateUniformBuffer(uint32_t set, uint32_t binding, const VkDeviceSize size,
@@ -156,7 +158,7 @@ void CommandBuffer::BindDescriptorSet(uint32_t set) {
 
   std::vector<uint32_t> dynamic_offsets;
   for (const auto &resource_binding : state_.per_draw.resource_bindings[set]) {
-    dynamic_offsets.push_back(resource_binding.offset);
+    dynamic_offsets.push_back(resource_binding.dynamic_offset);
   }
 
   auto &allocator = pipeline_layout.GetDescriptorSetAllocator(set);

@@ -11,7 +11,21 @@
 
 namespace vre::rendering {
 
-struct QueueFamilyIndices;
+struct PhysicalDeviceContext {
+  VkPhysicalDevice device;
+  VkSurfaceKHR surface;
+
+  std::set<std::string> required_extensions;
+
+  struct QueueFamilyIndices {
+    uint32_t graphics_family;
+    uint32_t present_family;
+  } indices;
+
+  VkSurfaceCapabilitiesKHR surface_capabilities;
+  std::vector<VkSurfaceFormatKHR> surface_formats;
+  std::vector<VkPresentModeKHR> present_modes;
+};
 
 struct UniformBufferObject {
   glm::mat4 model;
@@ -46,7 +60,8 @@ class RenderCore {
   VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
   VkSurfaceKHR surface_ = VK_NULL_HANDLE;
 
-  VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
+  PhysicalDeviceContext physical_device_;
+
   VkDevice device_ = VK_NULL_HANDLE;
 
   VmaAllocator vma_allocator_;
@@ -102,7 +117,7 @@ class RenderCore {
   void InitPipelineCache();
   void SaveAndDestroyPipelineCache();
 
-  void CreateSwapChain(GLFWwindow *window, const QueueFamilyIndices &indices);
+  void CreateSwapChain(GLFWwindow *window);
   void CreateImageViews();
   void CreateSyncObjects();
 };

@@ -8,26 +8,8 @@ enable_language(CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
-set(CMAKE_CXX_EXTENSIONS off)
-
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    add_definitions(-DWIN32_LEAN_AND_MEAN)
-ELSEIF(APPLE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_MACOS_MVK")
-ENDIF()
-
-IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options("-Wno-nullability-extension" "-Wno-nullability-completeness")
-ENDIF()
-
-IF(MSVC)
-    add_definitions(-DNOMINMAX)
-ENDIF()
-
-add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
-
-add_definitions(-DVK_DEBUG)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(external)
 
@@ -42,19 +24,32 @@ AUX_SOURCE_DIRECTORY(src SOURCES)
 
 add_library(vrengine_core OBJECT ${SOURCES})
 
-IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+target_compile_definitions(vrengine_core PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(vrengine_core PRIVATE VK_DEBUG)
+
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options (vrengine_core PRIVATE
-        "-Wno-nullability-extension" "-Wno-missing-field-initializers" "-Wno-nullability-completeness" "-Wno-macro-redefined"
-        "-Wall" "-Wextra" "-Wpedantic"
+        -Wall 
+        -Wextra 
+        -Wpedantic
+        -Wno-nullability-extension 
+        -Wno-missing-field-initializers 
+        -Wno-nullability-completeness 
+        -Wno-macro-redefined
+        -Wno-nullability-extension 
+        -Wno-nullability-completeness
     )
 ENDIF()
 
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    target_compile_definitions(vrengine_core PRIVATE VK_USE_PLATFORM_WIN32_KHR)
-    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
-ELSE()
+IF(WIN32)
+    target_compile_definitions(vrengine_core PRIVATE
+        VOLK_STATIC_DEFINES 
+        VK_USE_PLATFORM_WIN32_KHR 
+        WIN32_LEAN_AND_MEAN 
+        NOMINMAX
+    )
+ELSEIF(APPLE)
     target_compile_definitions(vrengine_core PRIVATE VK_USE_PLATFORM_MACOS_MVK)
-    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
 ENDIF()
 
 target_include_directories(vrengine_core PRIVATE

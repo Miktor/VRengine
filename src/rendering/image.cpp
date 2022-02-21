@@ -4,13 +4,16 @@
 namespace vre::rendering {
 
 ImageView::ImageView(VkDevice device, VkImageView view, ImageViewCreateInfo &&info)
-    : device_(device), view_(view), info_(std::move(info)) {}
+    : device_(device), view_(view), info_(std::move(info)) {
+}
 
-ImageView::~ImageView() { vkDestroyImageView(device_, view_, nullptr); }
+ImageView::~ImageView() {
+  vkDestroyImageView(device_, view_, nullptr);
+}
 
 Image::Image(VkDevice device, VkImage image, VkImageView default_view, const ImageCreateInfo &info,
              VkImageViewType view_type)
-    : device_(device), info_(info) {
+    : device_(device), info_(info), image_(image) {
   ImageViewCreateInfo view_info;
   view_info.image = this;
   view_info.view_type = view_type;

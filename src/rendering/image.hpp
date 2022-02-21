@@ -115,7 +115,10 @@ class Image {
 
  private:
   VkDevice device_;
+
   const ImageCreateInfo info_;
+  // TODO: transfer ownership of image to this class
+  VkImage image_;
   ImageViewPtr view_;
 
   VkImageLayout swapchain_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;

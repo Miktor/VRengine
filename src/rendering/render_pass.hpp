@@ -25,8 +25,7 @@ enum class RenderPassOp : uint32_t {
 
 struct RenderPassInfo {
   std::vector<ImageViewPtr> color_attachments;
-
-  RenderPassOp op_flags;
+  ImageViewPtr depth_stencil_attachment;
 
   uint32_t clear_attachments = 0;
   uint32_t store_attachments = 0;
@@ -37,15 +36,11 @@ struct RenderPassInfo {
   VkRect2D render_area = {{0, 0}, {UINT32_MAX, UINT32_MAX}};
 
   std::vector<VkClearColorValue> clear_color;
-
-  enum class DepthStencil {
-    None,
-    ReadOnly,
-    ReadWrite,
-  };
+  VkClearDepthStencilValue clear_depth_stencil{1.0f, 0};
 
   struct Subpass {
     std::vector<uint32_t> color_attachments;
+    bool use_depth_stencil = false;
   };
 
   std::vector<Subpass> subpasses;

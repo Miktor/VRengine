@@ -109,6 +109,7 @@ void CommandBuffer::BindUniformBuffer(uint32_t set, uint32_t binding, const Buff
   resource_binding.buffer_info.range = size;
   resource_binding.dynamic_offset = offset;
 
+  VR_ASSERT(state_.per_draw.resource_bindings[set].size() == binding);
   state_.per_draw.resource_bindings[set].push_back(resource_binding);
 }
 
